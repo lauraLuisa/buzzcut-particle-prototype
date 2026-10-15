@@ -18,6 +18,7 @@
       --inv: #f4f4f4;
       --border: #8d8d8d;
       --track: #6f6f6f;
+      --accent: #c6ff00;
       box-sizing: border-box;
       padding-top: env(safe-area-inset-top, 0px);
       padding-bottom: env(safe-area-inset-bottom, 0px)
@@ -44,7 +45,7 @@
       position: fixed;
       top: calc(16px + env(safe-area-inset-top, 0px));
       right: max(16px, env(safe-area-inset-right, 0px));
-      width: 280px;
+      width: 310px;
       max-width: calc(100% - 32px);
       box-sizing: border-box;
       background: var(--layer);
@@ -170,7 +171,7 @@
     }
 
     #pct {
-      font-size: clamp(72px, 14vw, 168px);
+      font-size: clamp(68px, 13vw, 126px);
       font-weight: 300;
       line-height: 1;
       letter-spacing: -.02em;
@@ -192,7 +193,7 @@
       bottom: 0;
       box-sizing: border-box;
       background: var(--layer);
-      padding: 20px max(32px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(32px, env(safe-area-inset-left, 0px))
+      padding: 20px max(24px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px))
     }
 
     .track {
@@ -250,7 +251,7 @@
 
     .mk {
       top: 0;
-      color: #78a9ff;
+      color: var(--accent);
       font-weight: 600
     }
 
@@ -260,7 +261,7 @@
       left: 50%;
       top: 22px;
       height: 34px;
-      border-left: 2px solid #78a9ff
+      border-left: 2px solid var(--accent)
     }
 
     .tick {
@@ -617,7 +618,8 @@
         const u = document.getElementById('ui').getBoundingClientRect(), t = document.getElementById('tl').getBoundingClientRect(), b = document.getElementById('big').getBoundingClientRect();
         let r = w, top = 0, bot = t.top;
         if (!mobile) {r = u.left - 16;} else {bot = u.top; top = b.bottom;}
-        cam.setViewOffset(w, h, Math.round(w / 2 - r / 2), Math.round(h / 2 - (top + bot) / 2 - (mobile ? 10 : h < 560 ? 30 : 100)), w, h);
+        const wide = w >= 1200 && !mobile;
+        cam.setViewOffset(w, h, Math.round(w / 2 - r / 2 - (wide ? r * .08 : 0)), Math.round(h / 2 - (top + bot) / 2 - (mobile ? 10 : h < 560 ? 30 : 100) + (wide ? 60 : 0)), w, h);
         cam.updateProjectionMatrix();
       }
       addEventListener('resize', resize); resize();
