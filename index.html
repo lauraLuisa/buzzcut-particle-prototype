@@ -501,7 +501,7 @@
   </div>
   <div id="big">
     <div class="lab">Rückgang des Insektenbestands seit 1990</div>
-    <div id="pct">0 %</div>
+    <div id="pct">0%</div>
     <div class="sub"><span id="yr">1990</span><span id="ph"></span></div>
   </div>
   <div id="tl">
@@ -754,7 +754,7 @@
         const dt = Math.min(clock.getDelta(), .05); time += dt;
         sl.style.setProperty('--p', (100 * (sl.value - 1990) / 70) + '%');
         const yr = +sl.value, st = yr <= 2026 ? 1 - .75 * (yr - 1990) / 36 : Math.max(0, .25 * (1 - (yr - 2026) / 34)), n = Math.round(N * st);
-        pctEl.textContent = Math.round((1 - st) * 100) + ' %'; pctEl.style.color = yr > 2026.05 ? '#fa4d56' : ''; yrEl.textContent = Math.floor(yr); phEl.textContent = yr > 2026 ? ' · Szenario' : '';
+        pctEl.textContent = Math.round((1 - st) * 100) + '%'; pctEl.style.color = yr > 2026.05 ? '#fa4d56' : ''; yrEl.textContent = Math.floor(yr); phEl.textContent = yr > 2026 ? ' · Szenario' : '';
         const stp = dt / 2; M += Math.max(-stp, Math.min(stp, target - M));
 
         grp.position.set(0, 3 + Math.sin(time * 2.2) * .12, 0);
