@@ -98,6 +98,38 @@
       outline-offset: -4px
     }
 
+    #cameraToggle {
+      width: 100%;
+      height: 40px;
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer
+    }
+
+    #cameraToggle:hover {
+      background: #353535
+    }
+
+    #cameraToggle:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: -4px
+    }
+
+    #cameraToggle:disabled {
+      cursor: wait;
+      opacity: .65
+    }
+
+    #cameraStatus {
+      margin: 8px 0 0;
+      color: var(--help);
+      font-size: 12px;
+      line-height: 16px
+    }
+
     .val {
       font-size: 32px;
       font-weight: 300;
@@ -459,6 +491,8 @@
   <div id="ui">
     <div class="lab">Insekt</div>
     <div class="seg"><button id="bBee" class="on">Biene</button><button id="bBut">Schmetterling</button></div>
+    <button id="cameraToggle" type="button">Kamera aktivieren</button>
+    <p id="cameraStatus" role="status" aria-live="polite">Daumen und Zeigefinger zusammendrücken, um das Insekt zu wechseln. Verarbeitung lokal im Browser.</p>
     <div id="info"><button id="ihead" type="button" aria-expanded="false"><span id="itit"></span><span class="chev"
           aria-hidden="true"></span></button>
       <p id="iwhy"></p>
@@ -480,6 +514,7 @@
         style="--f:1">2060</i>
     </div>
   </div>
+  <video id="handVideo" autoplay muted playsinline style="position:fixed;left:-10000px;width:640px;height:480px" aria-hidden="true"></video>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     (function () {
@@ -594,6 +629,89 @@
       const ihead = document.getElementById('ihead'), infoEl = document.getElementById('info');
       ihead.onclick = () => {ihead.setAttribute('aria-expanded', infoEl.classList.toggle('open'));};
 
+      // ---- Handerkennung ----
+      const cameraToggle = document.getElementById('cameraToggle');
+      const cameraStatus = document.getElementById('cameraStatus');
+      const handVideo = document.getElementById('handVideo');
+      const handModelUrl = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+      const handVisionUrl = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm';
+      let handTask = null, handStream = null, handRaf = 0, pinchSince = 0, pinchActive = false, lastVideoTime = -1;
+      function setCameraStatus(message) {
+        if (cameraStatus.textContent !== message) cameraStatus.textContent = message;
+      }
+      function stopHandTracking() {
+        cancelAnimationFrame(handRaf); handRaf = 0;
+        if (handStream) handStream.getTracks().forEach(track => track.stop());
+        handStream = null; handVideo.srcObject = null;
+        if (handTask) handTask.close();
+        handTask = null; pinchSince = 0; pinchActive = false; lastVideoTime = -1;
+        cameraToggle.textContent = 'Kamera aktivieren';
+        setCameraStatus('Daumen und Zeigefinger zusammendrücken, um das Insekt zu wechseln. Verarbeitung lokal im Browser.');
+      }
+      function detectHand() {
+        if (!handTask || !handStream) return;
+        if (handVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && handVideo.currentTime !== lastVideoTime) {
+          lastVideoTime = handVideo.currentTime;
+          const result = handTask.detectForVideo(handVideo, performance.now());
+          const points = result.landmarks && result.landmarks[0];
+          if (points) {
+            const thumb = points[4], index = points[8], wrist = points[0], middle = points[9];
+            const palmSize = Math.hypot(wrist.x - middle.x, wrist.y - middle.y);
+            const pinchRatio = palmSize ? Math.hypot(thumb.x - index.x, thumb.y - index.y) / palmSize : Infinity;
+            if (!pinchActive && pinchRatio < .28) {
+              if (!pinchSince) pinchSince = performance.now();
+              if (performance.now() - pinchSince >= 120) {
+                pick(target === 1 ? 0 : 1);
+                pinchActive = true;
+                setCameraStatus(`Pinch erkannt · ${INFO[target].t}`);
+              }
+            } else if (pinchActive && pinchRatio > .45) {
+              pinchSince = 0; pinchActive = false;
+              setCameraStatus('Kamera aktiv · Daumen und Zeigefinger zusammenführen');
+            } else if (!pinchActive) {
+              pinchSince = 0;
+            }
+          } else {
+            pinchSince = 0; pinchActive = false;
+            setCameraStatus('Kamera aktiv · Hand vor die Kamera halten');
+          }
+        }
+        handRaf = requestAnimationFrame(detectHand);
+      }
+      async function startHandTracking() {
+        cameraToggle.disabled = true;
+        setCameraStatus('Kamera wird gestartet …');
+        try {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Dieser Browser unterstützt keinen Kamerazugriff. Öffne die Seite über HTTPS.');
+          }
+          handStream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false});
+          handVideo.srcObject = handStream;
+          await handVideo.play();
+          setCameraStatus('Handerkennung wird geladen …');
+          const {FilesetResolver, HandLandmarker} = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs');
+          const vision = await FilesetResolver.forVisionTasks(handVisionUrl);
+          handTask = await HandLandmarker.createFromOptions(vision, {
+            baseOptions: {modelAssetPath: handModelUrl},
+            runningMode: 'VIDEO',
+            numHands: 1
+          });
+          cameraToggle.textContent = 'Kamera ausschalten';
+          setCameraStatus('Kamera aktiv · Hand vor die Kamera halten');
+          handRaf = requestAnimationFrame(detectHand);
+        } catch (error) {
+          stopHandTracking();
+          setCameraStatus(`Kamera konnte nicht gestartet werden: ${error.message}`);
+        } finally {
+          cameraToggle.disabled = false;
+        }
+      }
+      cameraToggle.addEventListener('click', () => {
+        if (handStream) stopHandTracking();
+        else startHandTracking();
+      });
+      addEventListener('pagehide', stopHandTracking);
+
       // ---- Kamera ----
       let th = .8, ph = 1.3, rad = 11, zoomed = false;
       const cv = renderer.domElement; const ptr = new Map(); let pinch = 0;
@@ -604,7 +722,11 @@
       cv.addEventListener('pointermove', e => {
         const p = ptr.get(e.pointerId); if (!p) return;
         const dx = e.clientX - p[0], dy = e.clientY - p[1]; p[0] = e.clientX; p[1] = e.clientY;
-        if (ptr.size === 2) {const d = dist(); if (pinch) {rad = Math.min(30, Math.max(4, rad * pinch / d)); zoomed = true;} pinch = d;}
+        if (ptr.size === 2) {
+          const d = dist();
+          if (pinch && d > 0) {rad = Math.min(30, Math.max(4, rad * pinch / d)); zoomed = true;}
+          pinch = d;
+        }
         else {th -= dx * .006; ph = Math.min(1.5, Math.max(.2, ph - dy * .006));}
       });
       cv.addEventListener('wheel', e => {rad = Math.min(30, Math.max(4, rad * (1 + e.deltaY * .001))); zoomed = true; e.preventDefault();}, {passive: false});
