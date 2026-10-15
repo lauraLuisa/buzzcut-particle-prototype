@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Buzzcut</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400&display=swap">
+  <style>
+    /* Carbon Design System, Theme Gray 100 (dunkel) */
+    :root {
+      --bg: #161616;
+      --layer: #262626;
+      --layer2: #393939;
+      --text: #f4f4f4;
+      --text2: #c6c6c6;
+      --help: #a8a8a8;
+      --inv: #f4f4f4;
+      --border: #8d8d8d;
+      --track: #6f6f6f;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px)
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      overflow: hidden
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none
+    }
+
+    #ui {
+      position: fixed;
+      top: calc(16px + env(safe-area-inset-top, 0px));
+      right: max(16px, env(safe-area-inset-right, 0px));
+      width: 280px;
+      max-width: calc(100% - 32px);
+      box-sizing: border-box;
+      background: var(--layer);
+      padding: 16px
+    }
+
+    .lab {
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: .32px;
+      color: var(--text2);
+      margin-bottom: 8px
+    }
+
+    .seg {
+      display: flex
+    }
+
+    .seg button {
+      flex: 1;
+      height: 40px;
+      font: inherit;
+      font-size: 14px;
+      letter-spacing: .16px;
+      border: 1px solid var(--border);
+      margin-left: -1px;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      border-radius: 0
+    }
+
+    .seg button:first-child {
+      margin-left: 0
+    }
+
+    .seg button:hover {
+      background: #353535
+    }
+
+    .seg button.on {
+      background: var(--inv);
+      color: #161616;
+      border-color: var(--inv);
+      position: relative
+    }
+
+    .seg button:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: -4px
+    }
+
+    .val {
+      font-size: 32px;
+      font-weight: 300;
+      line-height: 40px;
+      font-variant-numeric: tabular-nums
+    }
+
+    .of {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--help);
+      margin-left: 8px
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 16px;
+      background: transparent;
+      margin: 12px 0 24px;
+      --p: 100%;
+      cursor: pointer
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 2px;
+      background: linear-gradient(to right, var(--inv) var(--p), var(--track) var(--p))
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--inv);
+      margin-top: -6px
+    }
+
+    input[type=range]::-moz-range-track {
+      height: 2px;
+      background: var(--track)
+    }
+
+    input[type=range]::-moz-range-progress {
+      height: 2px;
+      background: var(--inv)
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--inv)
+    }
+
+    input[type=range]:focus-visible {
+      outline: none
+    }
+
+    input[type=range]:focus-visible::-webkit-slider-thumb {
+      box-shadow: 0 0 0 2px var(--layer), 0 0 0 4px #fff
+    }
+
+    #big {
+      position: fixed;
+      left: max(32px, env(safe-area-inset-left, 0px));
+      top: calc(24px + env(safe-area-inset-top, 0px));
+      pointer-events: none
+    }
+
+    #pct {
+      font-size: clamp(72px, 14vw, 168px);
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -.02em;
+      font-variant-numeric: tabular-nums
+    }
+
+    .sub {
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--text2);
+      font-variant-numeric: tabular-nums;
+      margin-top: 4px
+    }
+
+    #tl {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      box-sizing: border-box;
+      background: var(--layer);
+      padding: 20px max(32px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(32px, env(safe-area-inset-left, 0px))
+    }
+
+    .track {
+      position: relative;
+      height: 84px;
+      --t: 51.43%
+    }
+
+    .track input {
+      position: absolute;
+      left: 0;
+      top: 26px;
+      width: 100%;
+      height: 32px;
+      margin: 0;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    #sl::-webkit-slider-runnable-track {
+      height: 4px;
+      background: linear-gradient(to right, var(--inv) 0, var(--inv) min(var(--p), var(--t)), #fa4d56 min(var(--p), var(--t)), #fa4d56 var(--p), var(--track) var(--p))
+    }
+
+    #sl::-webkit-slider-thumb {
+      width: 20px;
+      height: 20px;
+      margin-top: -8px
+    }
+
+    #sl::-moz-range-track {
+      height: 4px;
+      background: var(--track)
+    }
+
+    #sl::-moz-range-progress {
+      height: 4px;
+      background: var(--inv)
+    }
+
+    #sl::-moz-range-thumb {
+      width: 20px;
+      height: 20px
+    }
+
+    .mk,
+    .tick {
+      position: absolute;
+      left: calc(10px + (100% - 20px) * var(--f));
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 12px;
+      letter-spacing: .32px;
+      font-style: normal
+    }
+
+    .mk {
+      top: 0;
+      color: #78a9ff;
+      font-weight: 600
+    }
+
+    .mk::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 22px;
+      height: 34px;
+      border-left: 2px solid #78a9ff
+    }
+
+    .tick {
+      top: 60px;
+      color: var(--help)
+    }
+
+    .tick::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: -8px;
+      height: 6px;
+      border-left: 1px solid var(--track)
+    }
+
+    .n {
+      font-size: 20px;
+      font-weight: 300;
+      line-height: 28px;
+      font-variant-numeric: tabular-nums
+    }
+
+    #info {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--layer2);
+      max-height: calc(100vh - 380px);
+      overflow-y: auto
+    }
+
+    #ihead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin: 0 0 8px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 600;
+      letter-spacing: .16px;
+      text-align: left;
+      pointer-events: none
+    }
+
+    .chev {
+      display: none
+    }
+
+    #info h3 {
+      margin: 16px 0 8px;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 600;
+      letter-spacing: .32px;
+      color: var(--text)
+    }
+
+    #info p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: .16px;
+      color: var(--text2)
+    }
+
+    /* Smartphone hochkant: Panel über der Zeitleiste, volle Breite */
+    @media(max-width:720px) and (orientation:portrait) {
+      #ui {
+        top: auto;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-width: none;
+        bottom: calc(var(--tlh, 124px) + 8px);
+        padding: 12px
+      }
+
+      #info {
+        margin-top: 12px;
+        padding-top: 12px;
+        max-height: 17vh
+      }
+
+      #info p {
+        font-size: 13px;
+        line-height: 18px
+      }
+
+      #ihead {
+        pointer-events: auto;
+        cursor: pointer;
+        min-height: 32px;
+        margin: 0
+      }
+
+      .chev {
+        display: block;
+        width: 8px;
+        height: 8px;
+        margin: 0 6px 4px 0;
+        border-right: 2px solid var(--text);
+        border-bottom: 2px solid var(--text);
+        transform: rotate(45deg);
+        transition: transform .2s
+      }
+
+      #info.open .chev {
+        transform: rotate(-135deg);
+        margin-bottom: -4px
+      }
+
+      #info:not(.open) #iwhy {
+        display: none
+      }
+
+      #info.open #iwhy {
+        margin-top: 4px
+      }
+
+      #ihead:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px
+      }
+
+      #big {
+        left: 16px
+      }
+
+      #pct {
+        font-size: clamp(56px, 20vw, 96px)
+      }
+
+      #tl {
+        padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px))
+      }
+
+      .track {
+        height: 76px
+      }
+
+      .track input {
+        top: 22px
+      }
+
+      .tick {
+        top: 54px
+      }
+
+      .mk::after {
+        height: 26px
+      }
+    }
+
+    /* Smartphone quer / niedrige Fenster */
+    @media(max-height:560px) {
+      #info {
+        max-height: max(64px, calc(100vh - 300px))
+      }
+
+      #pct {
+        font-size: clamp(48px, 22vh, 120px)
+      }
+
+      #tl {
+        padding-top: 10px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px))
+      }
+
+      .track {
+        height: 72px
+      }
+
+      .track input {
+        top: 20px
+      }
+
+      .tick {
+        top: 50px
+      }
+
+      .mk::after {
+        height: 22px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="ui">
+    <div class="lab">Insekt</div>
+    <div class="seg"><button id="bBee" class="on">Biene</button><button id="bBut">Schmetterling</button></div>
+    <div id="info"><button id="ihead" type="button" aria-expanded="false"><span id="itit"></span><span class="chev"
+          aria-hidden="true"></span></button>
+      <p id="iwhy"></p>
+    </div>
+
+  </div>
+  <div id="big">
+    <div class="lab">Insektenbestand</div>
+    <div id="pct">100 %</div>
+    <div class="sub"><span id="yr">1990</span> · <span id="ph">Vergangenheit</span> · Basis 1990 = 100 %</div>
+  </div>
+  <div id="tl">
+    <div class="track">
+      <i class="mk" style="--f:.5143">Heute · 2026</i>
+      <input id="sl" type="range" min="1990" max="2060" step="0.1" value="1990" aria-label="Jahr">
+      <i class="tick" style="--f:0">1990</i><i class="tick" style="--f:.1429">2000</i><i class="tick"
+        style="--f:.2857">2010</i><i class="tick" style="--f:.4286">2020</i><i class="tick" style="--f:.5714">2030</i><i
+        class="tick" style="--f:.7143">2040</i><i class="tick" style="--f:.8571">2050</i><i class="tick"
+        style="--f:1">2060</i>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    (function () {
+      const T = THREE, R = Math.random, PI = Math.PI;
+      const renderer = new T.WebGLRenderer({antialias: true});
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      document.body.prepend(renderer.domElement);
+      const scene = new T.Scene(); scene.background = new T.Color(0x161616); scene.fog = new T.Fog(0x161616, 18, 45);
+      const cam = new T.PerspectiveCamera(55, 1, .1, 100);
+      scene.add(new T.GridHelper(40, 40, 0x393939, 0x262626));
+
+      // ---- Partikel: je Teilchen eine Rolle im Schmetterling (p) und in der Biene (p.b) ----
+      function dir() {const z = 2 * R() - 1, a = 2 * PI * R(), r = Math.sqrt(1 - z * z); const k = .75 + .25 * R(); return [r * Math.cos(a) * k, z * k, r * Math.sin(a) * k];}
+      function mk(list, t, n, f) {for (let i = 0; i < n; i++)list.push(Object.assign({t, u: 0, v: 0, w: 0, s: 1, k: 0}, f()));}
+      const ball = () => {const d = dir(); return {u: d[0], v: d[1], w: d[2]};};
+      const wp = () => {const a = R(); if (a < .35) return {u: 1, v: R()}; if (a < .6) return {u: Math.sqrt(R()), v: (Math.floor(R() * 6) + .5) / 6}; return {u: Math.sqrt(R()), v: R()};};
+      function shuffle(a) {for (let i = a.length - 1; i > 0; i--) {const j = Math.floor(R() * (i + 1));[a[i], a[j]] = [a[j], a[i]];} }
+
+      const L = [];
+      mk(L, 0, 400, ball); mk(L, 1, 1200, ball); mk(L, 2, 1800, ball);
+      for (const s of [-1, 1]) {
+        mk(L, 3, 4200, () => Object.assign(wp(), {s, k: 0}));
+        mk(L, 3, 2800, () => Object.assign(wp(), {s, k: 1}));
+        mk(L, 4, 110, () => ({w: R(), s}));
+      }
+      shuffle(L);
+      const N = L.length;
+      const B = [];
+      mk(B, 0, 800, ball); mk(B, 1, 3200, ball);
+      for (const s of [-1, 1]) {
+        for (let k = 0; k < 2; k++)mk(B, 3, 1300, () => Object.assign(wp(), {s, k}));
+        for (let k = 0; k < 3; k++)mk(B, 4, 350, () => ({w: R(), s, k}));
+        mk(B, 5, 110, () => ({w: R(), s}));
+      }
+      mk(B, 6, 120, () => ({w: R()}));
+      mk(B, 2, N - B.length, ball);
+      shuffle(B);
+      L.forEach((p, i) => {
+        p.b = B[i];
+        p.f1 = 1.2 + R() * 2.5; p.f2 = 1.2 + R() * 2.5; p.f3 = 1.2 + R() * 2.5; p.p1 = R() * 6.28; p.p2 = R() * 6.28; p.p3 = R() * 6.28;
+        p.d = R(); const d = dir(); p.dx = d[0] * 1.6; p.dy = d[1] * 1.6; p.dz = d[2] * 1.6; p.st = R() < .2; p.sr = R() < .2 ? 1 : .35 + R() * .25; p.sf = .3 + R() * .5; p.sp = R() * 6.28;
+      });
+
+      const pos = new Float32Array(N * 3), col = new Float32Array(N * 3), base = new Float32Array(N * 3), vel = new Float32Array(N * 3);
+      const alive = new Uint8Array(N);
+      for (let i = 0; i < N; i++) {const b = .8 + .2 * R(); base[i * 3] = base[i * 3 + 1] = base[i * 3 + 2] = b;}
+      col.set(base);
+      const geo = new T.BufferGeometry();
+      geo.setAttribute('position', new T.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new T.BufferAttribute(col, 3));
+      const cvs = document.createElement('canvas'); cvs.width = cvs.height = 64; const cx = cvs.getContext('2d'); cx.beginPath(); cx.arc(32, 32, 30, 0, PI * 2); cx.fillStyle = '#fff'; cx.fill();
+      const pts = new T.Points(geo, new T.PointsMaterial({size: .032, map: new T.CanvasTexture(cvs), alphaTest: .5, transparent: true, vertexColors: true, sizeAttenuation: true}));
+      pts.frustumCulled = false; scene.add(pts);
+
+      // ---- Formen (x = vorne, z = seitlich) ----
+      function wing(q, t, o, cx, rx, rz, sweep, rootY, freq, amp, off, lag) {
+        const r = q.u, f = q.v * PI, d = r * Math.sin(f) * rz;
+        o.x = cx + r * Math.cos(f) * rx + d * sweep;
+        const th = Math.sin(t * freq - lag) * amp + off, ang = -q.s * th, zz = q.s * d;
+        o.y = rootY - zz * Math.sin(ang) + Math.sin(t * freq - d * 1.3) * .06 * d;
+        o.z = zz * Math.cos(ang);
+      }
+      function butterfly(q, t, o) {
+        switch (q.t) {
+          case 0: o.x = 1 + q.u * .16; o.y = .05 + q.v * .16; o.z = q.w * .16; break;
+          case 1: o.x = .55 + q.u * .4; o.y = q.v * .17; o.z = q.w * .17; break;
+          case 2: {const x = -.6 + q.u * .9, qq = .3 - x; o.x = x; o.y = q.v * .12 - .05 * qq + Math.sin(t * 5.5) * .05 * qq; o.z = q.w * .12 + Math.sin(t * 3) * .04 * qq; break;}
+          case 3: {const fw = q.k === 0; wing(q, t, o, fw ? .6 : -.4, fw ? .8 : .65, fw ? 1.6 : 1.1, fw ? .25 : -.2, 0, 5.5, .85, .3, fw ? 0 : .35); break;}
+          default: {const w = q.w; o.x = 1.1 + w * .7; o.y = .1 + w * .6 + Math.sin(t * 3 + w * 3) * .04 * w; o.z = q.s * (.07 + w * .25) + Math.sin(t * 2.5 + w * 2) * .04 * w;}
+        }
+      }
+      function bee(q, t, o) {
+        switch (q.t) {
+          case 0: o.x = 1 + q.u * .28; o.y = .02 + q.v * .26; o.z = q.w * .26; break;
+          case 1: o.x = .4 + q.u * .42; o.y = .05 + q.v * .38; o.z = q.w * .38; break;
+          case 2: {
+            const x = q.u * .85, tt = (x / .85 + 1) / 2, tp = .35 + .65 * Math.min(1, tt * 1.3);
+            o.x = -.7 + x; o.y = -.05 + q.v * .4 * tp - .22 * (1 - tt) + Math.sin(t * 6) * .03; o.z = q.w * .4 * tp; break;
+          }
+          case 3: {const fw = q.k === 0; wing(q, t, o, fw ? .3 : -.05, fw ? .32 : .24, fw ? 1.0 : .65, .05, .42, 50, .55, .75, fw ? 0 : .3); break;}
+          case 4: {
+            const hx = .55 - q.k * .35, hy = -.3, hz = q.s * .15, kx = hx + (q.k - 1) * .12, ky = hy - .2, kz = hz + q.s * .25;
+            const fx = kx + (q.k - 1) * .15 + Math.sin(t * 5 + q.k) * .05, fy = ky - .35, fz = kz + q.s * .08;
+            if (q.w < .5) {const m = q.w / .5; o.x = hx + (kx - hx) * m; o.y = hy + (ky - hy) * m; o.z = hz + (kz - hz) * m;}
+            else {const m = (q.w - .5) / .5; o.x = kx + (fx - kx) * m; o.y = ky + (fy - ky) * m; o.z = kz + (fz - kz) * m;} break;
+          }
+          case 5: {const w = q.w; o.x = 1.2 + w * .5; o.y = .2 + w * .45 + Math.sin(t * 4 + w * 3) * .04 * w; o.z = q.s * (.1 + w * .25) + Math.sin(t * 3 + w * 2) * .04 * w; break;}
+          default: o.x = -1.55 - q.w * .3; o.y = -.25 - q.w * .02; o.z = 0;
+        }
+      }
+
+      // ---- Bewegung (schwebt auf der Stelle) ----
+      const grp = new T.Object3D(); grp.rotation.order = 'YZX'; grp.scale.setScalar(1.5);
+      const v3 = new T.Vector3(), A = {x: 0, y: 0, z: 0}, Bq = {x: 0, y: 0, z: 0};
+      const JIT = .07;
+
+      // ---- UI ----
+      const sl = document.getElementById('sl'), pctEl = document.getElementById('pct'), yrEl = document.getElementById('yr'), phEl = document.getElementById('ph');
+
+
+      let target = 1, M = 1;
+      const bBut = document.getElementById('bBut'), bBee = document.getElementById('bBee');
+      const INFO = [
+        {t: 'Tagfalter', f: 'Tagfalter durchlaufen eine vollständige Verwandlung vom Ei über Raupe und Puppe zum Falter. Ihre Flügel sind mit Tausenden mikroskopisch kleinen Schuppen bedeckt, die Farbe und Muster erzeugen. Je nach Art schlagen sie etwa 5- bis 15-mal pro Sekunde.', w: 'Schmetterlinge bestäuben Blüten, und ihre Raupen sind wichtige Nahrung für Vögel, etwa für Meisenküken. Weil viele Arten empfindlich auf ihren Lebensraum reagieren, gelten sie als Frühwarnsystem für den Zustand von Wiesen und Wäldern. Die Bestände europäischer Wiesenfalter sind seit 1990 um etwa ein Drittel gesunken, vor allem durch intensive Landwirtschaft und den Verlust von Wiesen.'},
+        {t: 'Honigbiene', f: 'Die Westliche Honigbiene (Apis mellifera) ist etwa 12 mm lang und schlägt ihre Flügel rund 230-mal pro Sekunde, was das typische Summen erzeugt. Ein Volk zählt im Sommer bis zu 50.000 Tiere. Dazu kommen fast 600 Wildbienenarten in Deutschland.', w: 'Fast 90 % der wilden Blütenpflanzen und etwa drei Viertel der wichtigsten Nutzpflanzen sind ganz oder teilweise auf Bestäuber angewiesen. Fehlen die Bienen, werden Obst, Gemüse und Nüsse knapper und teurer, und Wildpflanzen sowie die Tiere, die von ihren Samen und Früchten leben, verlieren ihre Grundlage. Hauptursachen des Rückgangs sind der Verlust von Blühflächen, Pestizide, Klimawandel und eingeschleppte Krankheiten.'}
+      ];
+      function pick(v) {
+        target = v; bBut.classList.toggle('on', v === 0); bBee.classList.toggle('on', v === 1);
+        const d = INFO[v]; document.getElementById('itit').textContent = d.t; document.getElementById('iwhy').textContent = d.w;
+      }
+      bBut.onclick = () => pick(0); bBee.onclick = () => pick(1); pick(1);
+      const ihead = document.getElementById('ihead'), infoEl = document.getElementById('info');
+      ihead.onclick = () => {ihead.setAttribute('aria-expanded', infoEl.classList.toggle('open'));};
+
+      // ---- Kamera ----
+      let th = .8, ph = 1.3, rad = 11, zoomed = false;
+      const cv = renderer.domElement; const ptr = new Map(); let pinch = 0;
+      const dist = () => {const a = [...ptr.values()]; return Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]);};
+      cv.addEventListener('pointerdown', e => {ptr.set(e.pointerId, [e.clientX, e.clientY]); pinch = ptr.size === 2 ? dist() : 0; cv.setPointerCapture(e.pointerId);});
+      const endp = e => {ptr.delete(e.pointerId); pinch = 0;};
+      cv.addEventListener('pointerup', endp); cv.addEventListener('pointercancel', endp);
+      cv.addEventListener('pointermove', e => {
+        const p = ptr.get(e.pointerId); if (!p) return;
+        const dx = e.clientX - p[0], dy = e.clientY - p[1]; p[0] = e.clientX; p[1] = e.clientY;
+        if (ptr.size === 2) {const d = dist(); if (pinch) {rad = Math.min(30, Math.max(4, rad * pinch / d)); zoomed = true;} pinch = d;}
+        else {th -= dx * .006; ph = Math.min(1.5, Math.max(.2, ph - dy * .006));}
+      });
+      cv.addEventListener('wheel', e => {rad = Math.min(30, Math.max(4, rad * (1 + e.deltaY * .001))); zoomed = true; e.preventDefault();}, {passive: false});
+      function resize() {
+        const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); cam.aspect = w / h;
+        const mobile = w <= 720 && h > w;
+        document.documentElement.style.setProperty('--tlh', document.getElementById('tl').getBoundingClientRect().height + 'px');
+        if (!zoomed) rad = mobile ? Math.min(20, 11 * Math.max(1, .9 / cam.aspect)) : 11;
+        pts.material.size = .032 * Math.max(1, Math.min(1.5, 800 / h));
+        // Objekt in die freie Fläche zwischen den UI-Elementen verschieben
+        const u = document.getElementById('ui').getBoundingClientRect(), t = document.getElementById('tl').getBoundingClientRect(), b = document.getElementById('big').getBoundingClientRect();
+        let r = w, top = 0, bot = t.top;
+        if (!mobile) {r = u.left - 16;} else {bot = u.top; top = b.bottom;}
+        cam.setViewOffset(w, h, Math.round(w / 2 - r / 2), Math.round(h / 2 - (top + bot) / 2 - (mobile ? 10 : h < 560 ? 30 : 100)), w, h);
+        cam.updateProjectionMatrix();
+      }
+      addEventListener('resize', resize); resize();
+      if (window.ResizeObserver) {const ro = new ResizeObserver(resize); ro.observe(document.getElementById('ui')); ro.observe(document.getElementById('tl'));}
+
+      // ---- Loop ----
+      const clock = new T.Clock(); let time = 0;
+      function frame() {
+        requestAnimationFrame(frame);
+        const dt = Math.min(clock.getDelta(), .05); time += dt;
+        sl.style.setProperty('--p', (100 * (sl.value - 1990) / 70) + '%');
+        const yr = +sl.value, st = yr <= 2026 ? 1 - .75 * (yr - 1990) / 36 : Math.max(0, .25 * (1 - (yr - 2026) / 34)), n = Math.round(N * st);
+        pctEl.textContent = Math.round(st * 100) + ' %'; pctEl.style.color = yr > 2026.05 ? '#fa4d56' : ''; yrEl.textContent = Math.floor(yr); phEl.textContent = yr <= 2026 ? 'Vergangenheit' : 'Szenario';
+        const stp = dt / 2; M += Math.max(-stp, Math.min(stp, target - M));
+
+        grp.position.set(0, 3 + Math.sin(time * 2.2) * .12, 0);
+        grp.rotation.y = Math.sin(time * .3) * .3;
+        grp.rotation.z = .15 + Math.sin(time * 1.1) * .05;
+        grp.rotation.x = Math.sin(time * .8) * .04;
+        grp.updateMatrix();
+
+        let na = 0;
+        for (let i = 0; i < N; i++) {
+          const i3 = i * 3, p = L[i];
+          if (i < n) {
+            na++;
+            let m = Math.max(0, Math.min(1, (M - p.d * .4) / .6)); m = m * m * (3 - 2 * m);
+            let x, y, z;
+            if (m <= 0) {butterfly(p, time, A); x = A.x; y = A.y; z = A.z;}
+            else if (m >= 1) {bee(p.b, time, A); x = A.x; y = A.y; z = A.z;}
+            else {
+              butterfly(p, time, A); bee(p.b, time, Bq); const sw = Math.sin(PI * m);
+              x = A.x + (Bq.x - A.x) * m + p.dx * sw; y = A.y + (Bq.y - A.y) * m + p.dy * sw; z = A.z + (Bq.z - A.z) * m + p.dz * sw;
+            }
+            // diffuses Umherschwirren
+            x += Math.sin(time * p.f1 + p.p1) * JIT + Math.sin(time * 9 + p.p2) * .03;
+            y += Math.sin(time * p.f2 + p.p2) * JIT + Math.sin(time * 8 + p.p3) * .03;
+            z += Math.sin(time * p.f3 + p.p3) * JIT + Math.sin(time * 10 + p.p1) * .03;
+            if (p.st) { // vereinzelte Ausbrecher: wandern zeitweise weit aus der Form und kehren zurück
+              let e = Math.sin(time * p.sf + p.sp); e = e > 0 ? e * e * p.sr : 0;
+              x += p.dx * e * .7 + Math.sin(time * 2.3 + p.p1) * .12 * e; y += p.dy * e * .7 + Math.sin(time * 2.1 + p.p2) * .12 * e; z += p.dz * e * .7 + Math.sin(time * 2.7 + p.p3) * .12 * e;
+            }
+            v3.set(x, y, z).applyMatrix4(grp.matrix);
+            pos[i3] = v3.x; pos[i3 + 1] = v3.y; pos[i3 + 2] = v3.z;
+            if (!alive[i]) {alive[i] = 1; col[i3] = col[i3 + 1] = col[i3 + 2] = 1;}
+            else {for (let c = 0; c < 3; c++)col[i3 + c] += (base[i3 + c] - col[i3 + c]) * .08;}
+          } else {
+            if (alive[i]) {
+              alive[i] = 0;
+              vel[i3] = (R() - .5) * .6; vel[i3 + 1] = R() * .3; vel[i3 + 2] = (R() - .5) * .6;
+              col[i3] = base[i3] * .8; col[i3 + 1] = base[i3 + 1] * .8; col[i3 + 2] = base[i3 + 2] * .8;
+            }
+            if (pos[i3 + 1] > .03 || vel[i3 + 1] > 0) {
+              // schwebendes Absinken: starke Luftreibung, leichtes Taumeln, kein Aufprallen
+              const dr = Math.exp(-1.4 * dt);
+              vel[i3] *= dr; vel[i3 + 2] *= dr; vel[i3 + 1] = vel[i3 + 1] * dr - 4.2 * dt;
+              pos[i3] += (vel[i3] + Math.sin(time * 2.5 + i) * .18) * dt;
+              pos[i3 + 1] += vel[i3 + 1] * dt;
+              pos[i3 + 2] += (vel[i3 + 2] + Math.cos(time * 2.1 + i * 1.7) * .18) * dt;
+              if (pos[i3 + 1] <= .03) {
+                pos[i3 + 1] = .03;
+                if (vel[i3 + 1] < -.7) {vel[i3 + 1] = -vel[i3 + 1] * .22; vel[i3] *= .5; vel[i3 + 2] *= .5;} // minimaler Hopser
+                else vel[i3] = vel[i3 + 1] = vel[i3 + 2] = 0;
+              }
+            }
+          }
+        }
+
+        geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true;
+
+        cam.position.set(Math.sin(ph) * Math.cos(th) * rad, Math.cos(ph) * rad + 2, Math.sin(ph) * Math.sin(th) * rad);
+        cam.lookAt(0, 2.8, 0);
+        renderer.render(scene, cam);
+      }
+      frame();
+    })();
+  </script>
+</body>
+
+</html>
