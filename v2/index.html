@@ -1,0 +1,1478 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Particle Wild Bee</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+  <style>
+    /* Carbon Design System, Theme Gray 100 (dunkel), wie im Partikel-Prototyp */
+    :root {
+      --bg: #000;
+      --layer: #262626;
+      --layer2: #393939;
+      --text: #f4f4f4;
+      --text2: #c6c6c6;
+      --help: #a8a8a8;
+      --inv: #f4f4f4;
+      --border: #8d8d8d;
+      --accent: #9fe4ff;   /* eisiges Blau wie das Leuchten der Partikel */
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      overflow: hidden
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: grab
+    }
+
+    /* Carbon Design System, Theme Gray 100: Layer, Feld, Rand, Schrift IBM Plex Sans */
+    :root {
+      --layer01: #262626;
+      --layer02: #393939;
+      --field: #393939;
+      --borderSub: #525252;
+      --borderStrong: #8d8d8d;
+      --iconPrim: #f4f4f4;
+      --hover: #333333;
+      --focus: #ffffff;
+      --support-err: #fa4d56
+    }
+
+    button {
+      font-family: inherit
+    }
+
+    /* Zeitstrahl */
+    #tl {
+      position: fixed;
+      left: 50%;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%);
+      width: min(600px, calc(100% - 32px));
+      user-select: none;
+      -webkit-user-select: none
+    }
+
+    #tl .row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      margin-bottom: 8px
+    }
+
+    #tl .left {
+      display: flex;
+      gap: 4px;
+      justify-self: start
+    }
+
+    @media(max-width:480px) {
+      #tl .ghost span {
+        display: none
+      }
+
+      #tl .ghost {
+        padding: 0 8px
+      }
+    }
+
+    #yr {
+      font-size: 20px;
+      font-weight: 300;
+      line-height: 28px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      text-align: center
+    }
+
+    #loss {
+      font-size: 14px;
+      line-height: 18px;
+      letter-spacing: .16px;
+      color: var(--text2);
+      font-variant-numeric: tabular-nums;
+      text-align: right
+    }
+
+    .fut {
+      color: var(--support-err) !important
+    }
+
+    /* Carbon Ghost-Button mit Icon */
+    .ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-self: start;
+      height: 32px;
+      padding: 0 12px 0 8px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+      letter-spacing: .16px;
+      cursor: pointer
+    }
+
+    .ghost:hover {
+      background: var(--hover)
+    }
+
+    .ghost:focus-visible,
+    .icon-btn:focus-visible,
+    #dev .btns button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: -2px
+    }
+
+    .ghost svg,
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--iconPrim);
+      flex: none
+    }
+
+    /* Carbon Slider: Spur 2px, Kreis-Thumb */
+    .cds-range {
+      -webkit-appearance: none;
+      appearance: none;
+      display: block;
+      width: 100%;
+      height: 24px;
+      margin: 0;
+      background: transparent;
+      cursor: pointer;
+      --p: 0%
+    }
+
+    .cds-range::-webkit-slider-runnable-track {
+      height: 2px;
+      background: linear-gradient(to right, var(--inv) var(--p), var(--borderStrong) var(--p))
+    }
+
+    .cds-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      margin-top: -6px;
+      border-radius: 50%;
+      background: var(--inv);
+      transition: transform .11s cubic-bezier(.2, 0, .38, .9)
+    }
+
+    .cds-range:active::-webkit-slider-thumb {
+      transform: scale(1.4286)
+    }
+
+    .cds-range::-moz-range-track {
+      height: 2px;
+      background: var(--borderStrong)
+    }
+
+    .cds-range::-moz-range-progress {
+      height: 2px;
+      background: var(--inv)
+    }
+
+    .cds-range::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--inv)
+    }
+
+    .cds-range:focus-visible {
+      outline: none
+    }
+
+    .cds-range:focus-visible::-webkit-slider-thumb {
+      box-shadow: 0 0 0 2px #161616, 0 0 0 4px var(--focus)
+    }
+
+    /* Zeitstrahl-Slider: größerer Thumb, ab heute rot */
+    #sl {
+      height: 32px;
+      --t: 51.43%
+    }
+
+    #sl::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, var(--inv) 0, var(--inv) min(var(--p), var(--t)), var(--support-err) min(var(--p), var(--t)), var(--support-err) var(--p), var(--borderStrong) var(--p))
+    }
+
+    #sl::-webkit-slider-thumb {
+      width: 20px;
+      height: 20px;
+      margin-top: -9px
+    }
+
+    #sl::-moz-range-thumb {
+      width: 20px;
+      height: 20px
+    }
+
+    #tl .ticks {
+      position: relative;
+      height: 16px;
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: .32px;
+      color: var(--help)
+    }
+
+    #tl .ticks i {
+      position: absolute;
+      top: 0;
+      left: calc(10px + (100% - 20px) * var(--f));
+      transform: translateX(-50%);
+      font-style: normal;
+      white-space: nowrap
+    }
+
+    #tl .ticks i:first-child {
+      transform: none;
+      left: 0
+    }
+
+    #tl .ticks i:last-child {
+      transform: none;
+      left: auto;
+      right: 0
+    }
+
+    #tl .ticks .mk {
+      color: var(--accent);
+      font-weight: 600
+    }
+
+    #tl .ticks .mk::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: -22px;
+      height: 14px;
+      border-left: 2px solid var(--accent)
+    }
+
+    /* Carbon Icon-Button oben rechts */
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      cursor: pointer
+    }
+
+    .icon-btn:hover {
+      background: var(--hover)
+    }
+
+    #devBtn {
+      position: fixed;
+      top: calc(16px + env(safe-area-inset-top, 0px));
+      right: max(16px, env(safe-area-inset-right, 0px));
+      width: 48px;
+      height: 48px;
+      background: transparent   /* Carbon Ghost-Button */
+    }
+
+    #devBtn svg {
+      width: 20px;
+      height: 20px
+    }
+
+    #devBtn:hover {
+      background: var(--hover)
+    }
+
+    #devBtn[aria-expanded="true"] {
+      background: var(--hover)
+    }
+
+    #devBtn[aria-expanded="true"] svg {
+      fill: var(--accent)
+    }
+
+    /* Entwicklermenü als Carbon-Panel */
+    #dev {
+      position: fixed;
+      top: calc(64px + env(safe-area-inset-top, 0px));
+      right: max(16px, env(safe-area-inset-right, 0px));
+      width: 320px;
+      max-width: calc(100% - 32px);
+      max-height: calc(100% - 210px);
+      overflow-y: auto;
+      box-sizing: border-box;
+      background: var(--layer01);
+      color: var(--text);
+      display: none
+    }
+
+    #dev.on {
+      display: block
+    }
+
+    #dev header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0 0 16px;
+      background: var(--layer01);
+      border-bottom: 1px solid var(--borderSub)
+    }
+
+    #dev header h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 18px;
+      letter-spacing: .16px
+    }
+
+    #dev .body {
+      padding: 0 0 16px
+    }
+
+    /* Carbon Accordion */
+    #dev .acc {
+      border-top: 1px solid var(--borderSub)
+    }
+
+    #dev .acc:last-of-type {
+      border-bottom: 1px solid var(--borderSub)
+    }
+
+    #dev .acc>button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      min-height: 40px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: .16px;
+      text-align: left;
+      cursor: pointer
+    }
+
+    #dev .acc>button:hover {
+      background: var(--hover)
+    }
+
+    #dev .acc>button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: -2px
+    }
+
+    #dev .acc>button svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--iconPrim);
+      transform: rotate(90deg);
+      transition: transform .11s cubic-bezier(.2, 0, .38, .9)
+    }
+
+    #dev .acc.open>button svg {
+      transform: rotate(-90deg)
+    }
+
+    #dev .acc .panel {
+      display: none;
+      padding: 8px 16px 8px
+    }
+
+    #dev .acc.open .panel {
+      display: block
+    }
+
+    #dev label {
+      display: grid;
+      grid-template-columns: 1fr 64px;
+      align-items: center;
+      gap: 8px 16px;
+      margin-bottom: 16px
+    }
+
+    #dev label span {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: .32px;
+      color: var(--text2)
+    }
+
+    #dev label output {
+      height: 32px;
+      padding: 0 8px;
+      box-sizing: border-box;
+      background: var(--field);
+      border-bottom: 1px solid var(--borderStrong);
+      font-size: 14px;
+      line-height: 32px;
+      letter-spacing: .16px;
+      text-align: right;
+      font-variant-numeric: tabular-nums
+    }
+
+    #dev .btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      margin: 24px 16px 0
+    }
+
+    #dev .btns button {
+      height: 48px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 0;
+      text-align: left;
+      font-size: 14px;
+      letter-spacing: .16px;
+      color: #fff;
+      cursor: pointer
+    }
+
+    #dev .btns .primary {
+      background: var(--accent);
+      color: #161616
+    }
+
+    #dev .btns .primary:hover {
+      background: #7fd3f5
+    }
+
+    #dev .btns .secondary {
+      background: #6f6f6f
+    }
+
+    #dev .btns .secondary:hover {
+      background: #606060
+    }
+
+    @media(max-width:720px) {
+      #dev {
+        left: 16px;
+        right: 16px;
+        width: auto;
+        max-width: none
+      }
+    }
+    /* Zoom-Schalter: Raster ↔ Schwarm ↔ Biene, immer nur eine Stufe weiter (wie die Zoomtasten einer Karte) */
+    #zoom {
+      position: fixed;
+      left: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      width: 40px;
+      background: var(--layer01);
+      user-select: none;
+      -webkit-user-select: none;
+      z-index: 2
+    }
+
+    #zoom button {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer
+    }
+
+    #zoom button:hover:not(:disabled) {
+      background: var(--hover)
+    }
+
+    #zoom button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: -2px
+    }
+
+    #zoom button:disabled {
+      cursor: not-allowed;
+      color: #6f6f6f
+    }
+
+    #zoom svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor
+    }
+
+    #zoom .zb {
+      height: 48px
+    }
+
+    #zoom .zb svg {
+      width: 20px;
+      height: 20px
+    }
+
+    #zoom .lv {
+      border-top: 1px solid var(--borderSub);
+      border-bottom: 1px solid var(--borderSub)
+    }
+
+    #zoom .lv button[aria-current="true"] {
+      color: var(--accent);
+      background: #1c1c1c
+    }
+
+    #zoom .lv button[aria-current="true"]::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      background: var(--accent)
+    }
+
+    #zoom .lv span {
+      position: absolute;
+      left: 52px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      letter-spacing: .32px;
+      white-space: nowrap;
+      color: var(--help);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .2s
+    }
+
+    #zoom .lv button[aria-current="true"] span {
+      color: var(--text);
+      opacity: 1
+    }
+
+    #zoom:hover .lv span,
+    #zoom:focus-within .lv span {
+      opacity: 1
+    }
+
+    #tl {
+      transition: opacity .4s
+    }
+
+    body.zoomed #tl {
+      opacity: 0;
+      pointer-events: none
+    }
+
+    /* Infotafel zur Einzelbiene */
+    #info {
+      position: fixed;
+      right: max(24px, 6vw);
+      top: 50%;
+      width: min(360px, 34vw);
+      box-sizing: border-box;
+      padding: 24px 24px 16px;
+      background: rgba(22, 22, 22, .88);
+      border-left: 3px solid var(--accent);
+      transform: translate(16px, -50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .5s, transform .5s
+    }
+
+    #info.on {
+      opacity: 1;
+      transform: translate(0, -50%);
+      pointer-events: auto
+    }
+
+    #info .eyebrow {
+      margin: 0 0 12px;
+      font-size: 12px;
+      letter-spacing: .32px;
+      color: var(--help);
+      font-variant-numeric: tabular-nums
+    }
+
+    #info h2 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 300;
+      line-height: 36px
+    }
+
+    #info .lat {
+      margin: 2px 0 16px;
+      font-style: italic;
+      color: var(--text2);
+      font-size: 14px
+    }
+
+    #info p {
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: .16px
+    }
+
+    #info dl {
+      margin: 16px 0;
+      border-top: 1px solid var(--borderSub)
+    }
+
+    #info dl div {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--borderSub);
+      font-size: 14px;
+      line-height: 18px
+    }
+
+    #info dt {
+      color: var(--help)
+    }
+
+    #info dd {
+      margin: 0
+    }
+
+    #info .src {
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: .32px;
+      color: var(--help);
+      margin: 0 0 12px
+    }
+
+    #info .note {
+      color: var(--accent);
+      margin: 0 0 12px
+    }
+
+    #info .ghost {
+      margin-left: -12px
+    }
+
+    @media(max-width:720px) and (orientation:portrait) {
+      #zoom {
+        left: 16px;
+        top: 96px;
+        transform: none
+      }
+
+      #zoom .lv span {
+        display: none
+      }
+
+      #info {
+        left: 16px;
+        right: 16px;
+        top: auto;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        width: auto;
+        max-height: 46vh;
+        overflow: auto;
+        padding: 16px 16px 8px;
+        transform: translateY(16px)
+      }
+
+      #info.on {
+        transform: none
+      }
+
+      #info h2 {
+        font-size: 22px;
+        line-height: 28px
+      }
+
+      #info dl {
+        margin: 12px 0
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <button id="devBtn" class="icon-btn" type="button" aria-label="Developer menu" aria-expanded="false"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M30 8h-4.1c-.5-2.3-2.5-4-4.9-4s-4.4 1.7-4.9 4H2v2h14.1c.5 2.3 2.5 4 4.9 4s4.4-1.7 4.9-4H30V8zm-9 4c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zM2 24h4.1c.5 2.3 2.5 4 4.9 4s4.4-1.7 4.9-4H30v-2H15.9c-.5-2.3-2.5-4-4.9-4s-4.4 1.7-4.9 4H2v2zm9-4c1.7 0 3 1.3 3 3s-1.3 3-3 3-3-1.3-3-3 1.3-3 3-3z"/></svg></button>
+  <div id="dev" role="dialog" aria-label="Developer menu"></div>
+  <nav id="zoom" aria-label="View">
+    <button class="zb" id="zin" type="button" aria-label="Zoom in"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M17 15V7h-2v8H7v2h8v8h2v-8h8v-2z"/></svg></button>
+    <div class="lv">
+      <button type="button" data-l="1" aria-label="Single bee"><svg viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="16" cy="20" rx="5" ry="7"/><path d="M11.5 18h9M11.5 22.5h9"/><ellipse cx="9.5" cy="10.5" rx="4.5" ry="2.8" transform="rotate(-35 9.5 10.5)"/><ellipse cx="22.5" cy="10.5" rx="4.5" ry="2.8" transform="rotate(35 22.5 10.5)"/></g></svg><span>Bee</span></button>
+      <button type="button" data-l="0" aria-label="Swarm"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="9" cy="10" r="2"/><circle cx="17" cy="7" r="1.5"/><circle cx="23" cy="12" r="2"/><circle cx="14" cy="15" r="2.5"/><circle cx="7" cy="19" r="1.5"/><circle cx="20" cy="19" r="2"/><circle cx="12" cy="24" r="2"/><circle cx="25" cy="24" r="1.5"/><circle cx="18" cy="26" r="1"/></svg><span>Swarm</span></button>
+      <button type="button" data-l="-1" aria-label="Grid"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 5h4v4H5zm9 0h4v4h-4zm9 0h4v4h-4zM5 14h4v4H5zm9 0h4v4h-4zm9 0h4v4h-4zM5 23h4v4H5zm9 0h4v4h-4zm9 0h4v4h-4z"/></svg><span>Grid</span></button>
+    </div>
+    <button class="zb" id="zout" type="button" aria-label="Zoom out"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 15h18v2H7z"/></svg></button>
+  </nav>
+  <aside id="info" aria-hidden="true">
+    <h2>Wild bees</h2>
+    <p class="lat">561 species in Germany</p>
+    <p>Most live alone and nest in the ground, in dead wood or in hollow stems. As pollinators they sustain wild plants and many of our crops.</p>
+    <dl>
+      <div><dt>Red List</dt><dd>52.6% of assessed species are threatened, 39 of them extinct or missing (2011)</dd></div>
+      <div><dt>Germany</dt><dd>−76% biomass of flying insects from 1989 to 2016 in 63 protected areas</dd></div>
+      <div><dt>Worldwide</dt><dd>−9% terrestrial insects per decade</dd></div>
+      <div><dt>Causes</dt><dd>Habitat loss, pesticides, monocultures, climate change</dd></div>
+    </dl>
+    <p class="src">Timeline: measured data up to 2016 (Hallmann et al. 2017), then a pessimistic scenario until disappearance in 2060.</p>
+    <button id="infoBack" class="ghost" type="button"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 15h18v2H7z"/></svg><span>Back to swarm</span></button>
+  </aside>
+  <div id="tl">
+    <div class="row"><div class="left"><button id="play" class="ghost" type="button"></button></div><span id="yr">1990</span><span id="loss">0%</span></div>
+    <input id="sl" class="cds-range" type="range" min="0" max="1" step="0.0001" value="0" aria-label="Year">
+    <div class="ticks"><i style="--f:0">1990</i><i class="mk" style="--f:.5143">Today · 2026</i><i style="--f:1">2060</i></div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script>
+    (function () {
+      const T = THREE, PI = Math.PI, TAU = 2 * PI;
+      // feste Saat, damit die Biene bei jedem Laden gleich aussieht
+      let seed = 7; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      const gauss = () => {let u = 0; for (let i = 0; i < 6; i++) u += R(); return (u - 3) / 1.2;};
+      const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const renderer = new T.WebGLRenderer({antialias: true});
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      document.body.prepend(renderer.domElement);
+      const scene = new T.Scene(); scene.background = new T.Color(0x000000); scene.fog = new T.Fog(0x000000, 18, 45);
+      const cam = new T.PerspectiveCamera(55, 1, .1, 100);
+
+      // ---- Anatomie (x = vorne/Kopf, y = oben, z = seitlich), Körperlänge ≈ 3,3 ----
+      // Naturfarben angelehnt an Andrena fulva, Weibchen
+      const FOX = [.86, .42, .2], FOX2 = [.95, .58, .32], BLACK = [.34, .3, .28], EYE = [.24, .24, .22], SMOKE = [.62, .6, .56], GOLD = [.92, .72, .42], PALE = [.5, .47, .44];
+      const L = [];
+      function add(x, y, z, o) {L.push({x, y, z, part: o.part, nat: o.nat, wing: o.wing || null, ant: o.ant || 0, side: o.side || 0, leg: o.leg || 0});}
+      function dir() {const x = gauss(), y = gauss(), z = gauss(), l = Math.hypot(x, y, z) || 1; return [x / l, y / l, z / l];}
+      function ellipsoid(cx, cy, cz, rx, ry, rz, n, o) {
+        for (let made = 0; made < n;) {
+          const [dx, dy, dz] = dir();
+          if (o.keep && !o.keep(dx, dy, dz)) continue;
+          const f = o.fuzz ? Math.pow(R(), 1.6) * o.fuzz : 0, s = o.fill && R() < o.fill ? Math.cbrt(R()) * .9 : 1 + f;
+          add(cx + dx * rx * s, cy + dy * ry * s, cz + dz * rz * s, {...o, nat: typeof o.nat === 'function' ? o.nat(dx, dy, dz) : o.nat});
+          made++;
+        }
+      }
+      // Röhre entlang einer Polylinie, r darf von der Länge u (0..1) abhängen
+      function tube(pts, r, n, o) {
+        const len = [0];
+        for (let i = 1; i < pts.length; i++) {const a = pts[i - 1], b = pts[i]; len.push(len[i - 1] + Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]));}
+        const total = len[len.length - 1];
+        for (let k = 0; k < n; k++) {
+          const d = R() * total; let i = 0; while (i < pts.length - 2 && len[i + 1] < d) i++;
+          const t = (d - len[i]) / (len[i + 1] - len[i]), a = pts[i], b = pts[i + 1], u = d / total;
+          if (o.gap && o.gap(u)) continue;
+          const rr = typeof r === 'function' ? r(u) : r, [dx, dy, dz] = dir(), q = Math.sqrt(R());
+          add(a[0] + (b[0] - a[0]) * t + dx * rr * q, a[1] + (b[1] - a[1]) * t + dy * rr * q, a[2] + (b[2] - a[2]) * t + dz * rr * q, {...o, ant: o.isAnt ? u : 0});
+        }
+      }
+      function bezier(a, c, b, steps) {const out = []; for (let i = 0; i <= steps; i++) {const t = i / steps, s = 1 - t; out.push([0, 1, 2].map(k => s * s * a[k] + 2 * s * t * c[k] + t * t * b[k]));} return out;}
+
+      for (const s of [1, -1]) {
+        // Komplexaugen: glatt und dicht an den Kopfseiten
+        ellipsoid(1.1, .07, .27 * s, .12, .25, .11, 360, {part: 'eye', nat: EYE, keep: (dx, dy, dz) => dz * s > -.1});
+        tube([[1.17, -.22, .11 * s], [1.25, -.31, .07 * s], [1.24, -.35, .01 * s]], .022, 45, {part: 'head', nat: BLACK});
+        // Fühler: Schaft, Knie, gegliederte Geißel
+        tube([[1.25, .1, .07 * s], [1.36, .42, .12 * s]], .026, 60, {part: 'ant', nat: BLACK, isAnt: true, side: s});
+        tube(bezier([1.36, .42, .12 * s], [1.72, .66, .26 * s], [1.94, .36, .52 * s], 24), .02, 230, {part: 'ant', nat: BLACK, isAnt: true, side: s, gap: u => (u * 11) % 1 < .07});
+        ellipsoid(.66, .36, .24 * s, .05, .03, .04, 30, {part: 'thorax', nat: PALE});
+      }
+      // Kopf: breit, flach, Seiten frei für die Augen
+      ellipsoid(1.08, .04, 0, .2, .31, .36, 1300, {part: 'head', fuzz: .06, fill: .15, nat: BLACK, keep: (dx, dy, dz) => !(Math.abs(dz) > .62 && dy > -.6 && dy < .8)});
+      for (const [x, y, z] of [[1.12, .35, 0], [1.05, .34, .07], [1.05, .34, -.07]]) ellipsoid(x, y, z, .02, .02, .02, 14, {part: 'eye', nat: EYE});
+      // Brust: dicht behaart, oben fuchsrot
+      ellipsoid(.5, .1, 0, .4, .37, .36, 3600, {part: 'thorax', fuzz: .16, fill: .15, nat: (dx, dy) => dy > -.35 ? (R() < .5 ? FOX : FOX2) : BLACK});
+      tube([[.15, .02, 0], [-.02, -.02, 0]], .075, 200, {part: 'thorax', nat: BLACK});
+      // Hinterleib: sechs Tergite, die hinten etwas überlappen, oben dicht behaart
+      {
+        const X0 = .02, X1 = -1.42, SEG = 6;
+        for (let made = 0; made < 5600;) {
+          const u = R();
+          let rho = .46 * Math.pow(Math.sin(PI * Math.pow(u, .72)), .55);
+          if (R() > rho / .46) continue;
+          const fs = (u * SEG) % 1;
+          if (fs < .07 && R() < .75) continue;   // Einschnürung zwischen den Segmenten
+          rho *= (.92 + .1 * fs) * (R() < .15 ? Math.cbrt(R()) * .9 : 1);
+          const th = R() * TAU, c = Math.cos(th), sn = Math.sin(th), top = sn > -.3;
+          const f = (top ? .07 : .02) * Math.pow(R(), 1.5);
+          const x = X0 + (X1 - X0) * u, yc = -.04 - .16 * u * u;
+          add(x, yc + rho * .88 * sn * (sn < 0 ? .82 : 1) * (1 + f), rho * .98 * c * (1 + f), {part: 'abd', nat: top ? (fs > .8 ? FOX2 : FOX) : BLACK});
+          made++;
+        }
+      }
+      // Beine: vorne nach vorn gezogen, hinten im Flug nach hinten hängend; Hinterschiene mit Pollenbürste
+      const LEGS = [
+        {p: [[.78, -.18, .12], [.82, -.28, .18], [1.0, -.38, .38], [.96, -.66, .42], [1.06, -.94, .4]], hind: false},
+        {p: [[.52, -.26, .16], [.52, -.34, .22], [.55, -.46, .55], [.36, -.78, .62], [.2, -1.04, .6]], hind: false},
+        {p: [[.28, -.24, .14], [.22, -.34, .22], [.1, -.5, .56], [-.36, -.84, .62], [-.62, -1.1, .56]], hind: true}
+      ];
+      for (const s of [1, -1]) for (const leg of LEGS) {
+        const q = leg.p.map(([x, y, z]) => [x, y, z * s]);
+        const lg = (LEGS.indexOf(leg) + 1) * s;
+        tube([q[0], q[1]], .03, 30, {part: 'leg', leg: lg, nat: BLACK});
+        tube([q[1], q[2]], .018, 60, {part: 'leg', leg: lg, nat: BLACK});
+        tube([q[2], q[3]], u => leg.hind ? .016 + .014 * u : .014, leg.hind ? 70 : 55, {part: 'leg', leg: lg, nat: BLACK});
+        if (leg.hind) tube([q[2], q[3]], u => .025 + .03 * Math.sin(PI * u), 90, {part: 'leg', leg: lg, nat: GOLD});
+        tube([q[3], q[4]], .008, 55, {part: 'leg', leg: lg, nat: BLACK, gap: u => (u * 5) % 1 < .12});
+      }
+      // Flügel: Umriss, Adern mit drei Cubitalzellen, Flügelmal, lockere Membran. u = Spannweite, v = Tiefe nach hinten, in Flügellängen
+      const WINGS = [
+        {hinge: [.66, .38, .2], len: 1.55, w: u => .1 + .27 * Math.sin(PI * Math.pow(u, .8)), le: u => .03 * u * u, n: 1500, stigma: true, back: 0,
+          veins: [
+            [[0, .012], [.6, .036]], [[.02, .05], [.55, .07]],
+            [[.62, .05], [.75, .06], [.86, .1], [.82, .14], [.68, .12], [.62, .08]],
+            [[.02, .1], [.3, .16], [.48, .2]], [[.48, .08], [.48, .22]], [[.58, .085], [.6, .24]], [[.68, .12], [.72, .26]],
+            [[.48, .22], [.6, .24], [.72, .26]], [[.3, .16], [.36, .3], [.58, .33], [.6, .24]], [[.04, .16], [.36, .3]], [[.03, .2], [.25, .32]]
+          ]},
+        {hinge: [.46, .33, .19], len: 1.02, w: u => .07 + .2 * Math.sin(PI * Math.pow(u, .85)), le: u => .02 * u * u, n: 650, stigma: false, back: .38,
+          veins: [[[0, .01], [.56, .03]], [[.03, .06], [.4, .1], [.52, .16]], [[.05, .12], [.3, .2]]]}
+      ];
+      for (const s of [1, -1]) WINGS.forEach(wg => {
+        // ein Teil der Partikel hinkt im Schlag nach, das wirkt wie Bewegungsunschärfe
+        const put = (u, v) => add(0, 0, 0, {part: 'wing', nat: SMOKE, side: s, wing: {s, h: wg.hinge, len: wg.len, u, v, back: wg.back, ph: R() < .22 ? R() * 1.6 : gauss() * .04}});
+        const nM = Math.round(wg.n * .3), nV = Math.round(wg.n * .45), nF = wg.n - nM - nV;
+        for (let i = 0; i < nM; i++) {const u = R(); put(u, R() < .5 ? wg.le(u) : wg.le(u) + wg.w(u));}
+        const vl = wg.veins.map(p => {let l = 0; for (let i = 1; i < p.length; i++) l += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); return l;});
+        const vt = vl.reduce((a, b) => a + b, 0);
+        for (let i = 0; i < nV; i++) {
+          let d = R() * vt, k = 0; while (k < vl.length - 1 && d > vl[k]) {d -= vl[k]; k++;}
+          const p = wg.veins[k]; let j = 1, sl = 0;
+          while (j < p.length - 1 && d > (sl = Math.hypot(p[j][0] - p[j - 1][0], p[j][1] - p[j - 1][1]))) {d -= sl; j++;}
+          sl = Math.hypot(p[j][0] - p[j - 1][0], p[j][1] - p[j - 1][1]); const t = sl ? clamp(d / sl, 0, 1) : 0;
+          put(p[j - 1][0] + (p[j][0] - p[j - 1][0]) * t, p[j - 1][1] + (p[j][1] - p[j - 1][1]) * t);
+        }
+        if (wg.stigma) for (let i = 0; i < 60; i++) put(.55 + R() * .1, .035 + R() * .035);
+        for (let i = 0; i < nF; i++) {const u = R(); put(u, wg.le(u) + R() * wg.w(u));}
+      });
+      const N = L.length;
+
+      // ---- je Partikel: Schwirren wie im Prototyp, Ausreißer, Bahn im Schwarm ----
+      const ORDER = {thorax: 0, head: .3, eye: .35, abd: .35, leg: .7, wing: .85, ant: 1};
+      const P = L.map(l => {
+        const [ux, uy, uz] = dir(); let [vx, vy, vz] = dir();
+        const d = vx * ux + vy * uy + vz * uz; vx -= d * ux; vy -= d * uy; vz -= d * uz; const vl = Math.hypot(vx, vy, vz) || 1;
+        const [dx, dy, dz] = dir();
+        return {
+          f1: 1.2 + R() * 2.5, f2: 1.2 + R() * 2.5, f3: 1.2 + R() * 2.5, p1: R() * 6.28, p2: R() * 6.28, p3: R() * 6.28,
+          dx: dx * 1.6, dy: dy * 1.6, dz: dz * 1.6, st: R() < .3, sr: R() < .2 ? 1 : .35 + R() * .25, sf: .3 + R() * .5, sp: R() * 6.28,
+          ux, uy, uz, vx: vx / vl, vy: vy / vl, vz: vz / vl, r: .4 + 2.2 * Math.pow(R(), .8), a: (.6 + 2.2 * R()) * (R() < .5 ? -1 : 1), ph: R() * TAU,
+          d: clamp(ORDER[l.part] / 1.4 + R() * .3, 0, 1), j: l.part === 'leg' ? .65 : 1
+        };
+      });
+
+      const pos = new Float32Array(N * 3), col = new Float32Array(N * 3), white = new Float32Array(N * 3), nat = new Float32Array(N * 3), vel = new Float32Array(N * 3), off = new Float32Array(N * 3);
+      L.forEach((l, i) => {
+        // Flügelwurzel und Brust etwas dunkler, dort überlagern sich sonst zu viele Partikel
+        const fct = l.wing ? .3 + .7 * Math.min(1, l.wing.u / .35) : l.part === 'thorax' ? .7 : 1;
+        const b = (.8 + .2 * R()) * fct; white[i * 3] = white[i * 3 + 1] = white[i * 3 + 2] = b;
+        const k = .85 + .3 * R(); for (let c = 0; c < 3; c++) nat[i * 3 + c] = clamp(l.nat[c] * k * fct, 0, 1);
+      });
+      col.set(white);
+      // Reihenfolge, in der die Partikel sterben, und ihr Zustand: 0 lebt, 1 fällt, 2 liegt am Boden
+      const rank = new Float32Array(N), dead = new Uint8Array(N), dim = new Float32Array(N).fill(1);
+      for (let i = 0; i < N; i++) rank[i] = R();
+      // beim Zerfall werden zusätzlich Partikel nur ausgeblendet; Beine, Fühler, Augen und Flügel bleiben am längsten, so bleibt ein Gerippe
+      const fkey = new Float32Array(N), hid = new Uint8Array(N);
+      for (let i = 0; i < N; i++) fkey[i] = R() * ({leg: 2.4, ant: 2.4, wing: 1.7, eye: 1.5}[L[i].part] || 1);
+      // Aufreihen: jedes Partikel hat einen festen Platz im Raster, sortiert nach Sterbereihenfolge (lebende zuerst)
+      const order = Array.from({length: N}, (_, i) => i).sort((a, b) => rank[a] - rank[b]);
+      const slot = new Uint32Array(N); order.forEach((i, k) => {slot[i] = k;});
+      const rp = new Float32Array(N * 3);   // angezeigte Position: Simulation, ins Raster gemischt
+      let lineup = 0, Lv = 0;
+      const GS = 4;   // im Raster nur jedes 4. Partikel zeigen (Verhältnis lebend/tot bleibt)
+      const geo = new T.BufferGeometry();
+      geo.setAttribute('position', new T.BufferAttribute(rp, 3));
+      geo.setAttribute('color', new T.BufferAttribute(col, 3));
+      // Leuchtende Partikel: weiche Scheiben, additiv überblendet, viele kleine und wenige große Funken, die leicht funkeln
+      const pSize = new Float32Array(N), pTw = new Float32Array(N * 2);
+      for (let i = 0; i < N; i++) {pSize[i] = .85 + .3 * R() + (R() < .04 ? .3 + R() * .3 : 0); pTw[i * 2] = R() * TAU; pTw[i * 2 + 1] = .6 + R() * 2.4;}
+      geo.setAttribute('psize', new T.BufferAttribute(pSize, 1));
+      geo.setAttribute('tw', new T.BufferAttribute(pTw, 2));
+      const pMat = new T.ShaderMaterial({
+        uniforms: {uSize: {value: .036}, uScale: {value: 1}, uTime: {value: 0}, uTw: {value: .35}, uBright: {value: 1}, uMax: {value: 64}, uNear: {value: 0}},
+        vertexShader: `
+          attribute vec3 color; attribute float psize; attribute vec2 tw;
+          uniform float uSize, uScale, uTime, uTw, uBright, uMax, uNear; varying vec3 vC;
+          void main() {
+            vec4 mv = modelViewMatrix * vec4(position, 1.0);
+            float t = 1.0 - uTw + uTw * (.5 + .5 * sin(uTime * tw.y + tw.x));
+            vC = color * t * uBright * (.75 + .25 * psize);
+            gl_PointSize = clamp(psize * uSize * uScale / -mv.z, 1.0, uMax);
+            if (uNear > 0.0) vC *= smoothstep(uNear * .3, uNear * .9, -mv.z);   // beim Hineinfliegen: Partikel vor der Kamera blenden aus statt riesig zu werden
+            gl_Position = projectionMatrix * mv;
+          }`,
+        fragmentShader: `
+          varying vec3 vC;
+          void main() {
+            float r = length(gl_PointCoord - .5) * 2.0;
+            float a = smoothstep(1.0, 0.0, r);
+            a = a * a * (.55 + .45 * smoothstep(.45, 0.0, r));
+            gl_FragColor = vec4(vC * a, 1.0);
+          }`,
+        transparent: true, depthWrite: false, blending: T.AdditiveBlending
+      });
+      const pts = new T.Points(geo, pMat);
+      pts.frustumCulled = false; scene.add(pts);
+      // Glow wie im Drehrad-Prototyp
+      let composer = null, bloom = null;
+      if (T.EffectComposer && T.UnrealBloomPass) {
+        composer = new T.EffectComposer(renderer);
+        composer.addPass(new T.RenderPass(scene, cam));
+        bloom = new T.UnrealBloomPass(new T.Vector2(1, 1), .8, .55, .28);
+        composer.addPass(bloom);
+      }
+
+      // ---- Einzelbiene als 3D-Objekt: dieselbe Anatomie wie die Partikelbiene, als Flächen mit Fell, eigene Szene über den Partikeln ----
+      const bee = new T.Group();
+      const bMats = [], bParts = [];
+      const rgb = c => new T.Color(c[0], c[1], c[2]);
+      // Leuchtstil wie die Partikel: eisiges Licht, additiv, Kanten glühen (Fresnel), keine Naturfarben
+      const ICE = new T.Color(.76, .94, 1);
+      const reg = m => {m.userData.op = 1; bMats.push(m); return m;};
+      const mat = (base, rimA, pw = 2.2, side = T.FrontSide) => reg(new T.ShaderMaterial({
+        uniforms: {uCol: {value: ICE}, uOp: {value: 1}, uBase: {value: base}, uRim: {value: rimA}, uPow: {value: pw}},
+        vertexShader: 'varying vec3 vN, vV; void main() {vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv;}',
+        fragmentShader: 'uniform vec3 uCol; uniform float uOp, uBase, uRim, uPow; varying vec3 vN, vV; void main() {float f = 1.0 - abs(dot(normalize(vN), normalize(vV))); gl_FragColor = vec4(uCol * (uBase + uRim * pow(f, uPow)) * uOp, 1.0);}',
+        transparent: true, depthWrite: false, blending: T.AdditiveBlending, side}));
+      const lmat = op => {const m = reg(new T.LineBasicMaterial({vertexColors: true, transparent: true, opacity: op, depthWrite: false, blending: T.AdditiveBlending})); m.userData.op = op; return m;};
+      const mBlack = mat(.015, .5, 2.6), mEye = mat(.05, .9, 1.6), mFox = mat(.04, .55, 2), mWing = mat(.012, .22, 1.4, T.DoubleSide);
+      const put3 = o => {bee.add(o); bParts.push(o); return o;};
+      const blob = (m, x, y, z, rx, ry, rz) => {const o = new T.Mesh(new T.SphereGeometry(1, 40, 28), m); o.position.set(x, y, z); o.scale.set(rx, ry, rz); return put3(o);};
+      const rod = (pts, r, m) => {
+        const cp = new T.CurvePath(); for (let k = 1; k < pts.length; k++) cp.add(new T.LineCurve3(new T.Vector3(...pts[k - 1]), new T.Vector3(...pts[k])));
+        for (let k = 1; k < pts.length - 1; k++) blob(m, ...pts[k], r, r, r);   // Gelenke
+        return put3(new T.Mesh(new T.TubeGeometry(cp, 10 * pts.length, r, 7), m));
+      };
+      const surf = (nu, nv, fn, m) => {
+        const p = [], ix = [];
+        for (let a = 0; a <= nu; a++) for (let b = 0; b <= nv; b++) p.push(...fn(a / nu, b / nv));
+        for (let a = 0; a < nu; a++) for (let b = 0; b < nv; b++) {const k = a * (nv + 1) + b; ix.push(k, k + nv + 1, k + 1, k + 1, k + nv + 1, k + nv + 2);}
+        const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); g.setIndex(ix); g.computeVertexNormals();
+        return put3(new T.Mesh(g, m));
+      };
+      // Fell als kurze Härchen, am Ansatz dunkler
+      const hp = [], hc = [];
+      const hair = (x, y, z, nx, ny, nz, len, c) => {
+        const h = len * (.55 + .7 * R());
+        hp.push(x, y, z, x + (nx + (R() - .5) * .5) * h, y + (ny + (R() - .5) * .5 - .15) * h, z + (nz + (R() - .5) * .5) * h);
+        const k = (.12 + .88 * (c[0] * .3 + c[1] * .59 + c[2] * .11) / .55) * .3; hc.push(ICE.r * k * .08, ICE.g * k * .08, ICE.b * k * .08, ICE.r * k, ICE.g * k, ICE.b * k);   // hell wie die Partikel: Pelz leuchtet, schwarze Stellen bleiben dunkel
+      };
+      const furEll = (cx, cy, cz, rx, ry, rz, n, len, colFn, keep) => {
+        for (let k = 0; k < n; k++) {
+          const [dx, dy, dz] = dir(); if (keep && !keep(dx, dy, dz)) continue;
+          let nx = dx / rx, ny = dy / ry, nz = dz / rz; const nl = Math.hypot(nx, ny, nz);
+          hair(cx + dx * rx, cy + dy * ry, cz + dz * rz, nx / nl, ny / nl, nz / nl, len, colFn(dx, dy, dz));
+        }
+      };
+      const mix = (a, b, t) => a.map((v, k) => v + (b[k] - v) * t);
+      const foxC = () => mix(FOX, FOX2, R());
+
+      // Kopf, Facettenaugen, Punktaugen, Mundwerkzeuge, Fühler
+      blob(mBlack, 1.08, .04, 0, .2, .31, .36);
+      furEll(1.08, .04, 0, .2, .31, .36, 900, .04, () => mix(BLACK, [.12, .1, .09], R()).map(v => v * .5), (dx, dy, dz) => !(Math.abs(dz) > .62 && dy > -.6 && dy < .8));
+      for (const s of [1, -1]) {
+        blob(mEye, 1.1, .07, .27 * s, .12, .25, .11);
+        rod([[1.17, -.22, .11 * s], [1.25, -.31, .07 * s], [1.24, -.35, .01 * s]], .022, mBlack);
+        put3(new T.Mesh(new T.TubeGeometry(new T.LineCurve3(new T.Vector3(1.25, .1, .07 * s), new T.Vector3(1.36, .42, .12 * s)), 6, .026, 7), mBlack));
+        put3(new T.Mesh(new T.TubeGeometry(new T.QuadraticBezierCurve3(new T.Vector3(1.36, .42, .12 * s), new T.Vector3(1.72, .66, .26 * s), new T.Vector3(1.94, .36, .52 * s)), 40, .02, 7), mBlack));
+      }
+      for (const [x, y, z] of [[1.12, .35, 0], [1.05, .34, .07], [1.05, .34, -.07]]) blob(mEye, x, y, z, .022, .022, .022);
+      // Brust mit dichtem, fuchsrotem Pelz, darunter schwarz; Taille
+      blob(mFox, .5, .1, 0, .38, .35, .34);
+      furEll(.5, .1, 0, .4, .37, .36, 3800, .075, (dx, dy) => dy > -.35 ? foxC() : BLACK.map(v => v * .5));
+      rod([[.15, .02, 0], [-.02, -.02, 0]], .075, mBlack);
+      // Hinterleib: sechs Tergite, oben behaart
+      const X0 = .02, X1 = -1.42, SEG = 6;
+      const abdR = u => .46 * Math.pow(Math.max(0, Math.sin(PI * Math.pow(u, .72))), .55) * (.92 + .1 * ((u * SEG) % 1));
+      const abdP = (u, th, f) => {const rho = abdR(u) * (1 + f), sn = Math.sin(th), c = Math.cos(th); return [X0 + (X1 - X0) * u, -.04 - .16 * u * u + rho * .88 * sn * (sn < 0 ? .82 : 1), rho * .98 * c];};
+      surf(90, 36, (u, v) => abdP(u, v * TAU, 0), mFox);
+      for (let k = 0; k < 4200; k++) {
+        const u = R(), th = R() * TAU, sn = Math.sin(th), top = sn > -.3, fs = (u * SEG) % 1;
+        if (!top && R() < .6) continue;
+        const [x, y, z] = abdP(u, th, 0), n = [0, sn, Math.cos(th)];
+        hair(x, y, z, n[0] - .6, n[1], n[2], top ? .035 : .02, top ? (fs > .8 ? FOX2 : foxC()) : BLACK.map(v => v * .5));
+      }
+      // Beine wie bei der Partikelbiene, Hinterschiene mit goldener Pollenbürste
+      for (const s of [1, -1]) for (const leg of LEGS) {
+        const q = leg.p.map(([x, y, z]) => [x, y, z * s]);
+        rod([q[0], q[1], q[2]], .028, mBlack); rod([q[2], q[3]], leg.hind ? .028 : .02, mBlack); rod([q[3], q[4]], .012, mBlack);
+        if (leg.hind) for (let k = 0; k < 260; k++) {
+          const t = R(), [ax, ay, az] = q[2], [bx, by, bz] = q[3], [dx, dy, dz] = dir();
+          hair(ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t, dx, dy, dz, .07 * Math.sin(PI * t) + .02, mix(GOLD, FOX2, R() * .5));
+        }
+      }
+      const furG = new T.BufferGeometry(); furG.setAttribute('position', new T.Float32BufferAttribute(hp, 3)); furG.setAttribute('color', new T.Float32BufferAttribute(hc, 3));
+      const mFur = lmat(.95);
+      put3(new T.LineSegments(furG, mFur));
+      // Flügel: Membran und Adern als (u, v)-Netz, jedes Bild mit derselben Schlagkinematik wie die Partikel bewegt
+      const mVein = lmat(.55);
+      const bWings = [];
+      for (const s of [1, -1]) WINGS.forEach(wg => {
+        const uv = [], NU = 24, NV = 6, ix = [];
+        for (let a = 0; a <= NU; a++) for (let b = 0; b <= NV; b++) {const u = a / NU; uv.push(u, wg.le(u) + wg.w(u) * b / NV);}
+        for (let a = 0; a < NU; a++) for (let b = 0; b < NV; b++) {const k = a * (NV + 1) + b; ix.push(k, k + NV + 1, k + 1, k + 1, k + NV + 1, k + NV + 2);}
+        const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(uv.length / 2 * 3), 3)); g.setIndex(ix);
+        const vuv = [], vc = [];
+        const seg = (a, b) => {vuv.push(a[0], a[1], b[0], b[1]); vc.push(.25, .3, .33, .25, .3, .33);};
+        for (let a = 0; a < NU; a++) {const u0 = a / NU, u1 = (a + 1) / NU; seg([u0, wg.le(u0)], [u1, wg.le(u1)]); seg([u0, wg.le(u0) + wg.w(u0)], [u1, wg.le(u1) + wg.w(u1)]);}
+        for (const p of wg.veins) for (let k = 1; k < p.length; k++) seg(p[k - 1], p[k]);
+        const vg = new T.BufferGeometry(); vg.setAttribute('position', new T.BufferAttribute(new Float32Array(vuv.length / 2 * 3), 3)); vg.setAttribute('color', new T.Float32BufferAttribute(vc, 3));
+        bWings.push({wg, s, uv: new Float32Array(uv), g, vuv: new Float32Array(vuv), vg});
+        put3(new T.Mesh(g, mWing)); put3(new T.LineSegments(vg, mVein));
+      });
+      const wingPose = (W, a) => {
+        const {wg, s} = W, el = .2 + .8 * Math.sin(a), sg = .3 + wg.back + .38 * Math.cos(a), ss = Math.sin(sg), cs = Math.cos(sg), se = Math.sin(el), ce = Math.cos(el);
+        for (const [src, g] of [[W.uv, W.g], [W.vuv, W.vg]]) {
+          const out = g.attributes.position.array;
+          for (let k = 0, j = 0; k < src.length; k += 2, j += 3) {
+            const S = src[k] * wg.len, C = src[k + 1] * wg.len;
+            out[j] = wg.hinge[0] - S * ss - C * cs; out[j + 1] = wg.hinge[1] + (S * cs - C * ss) * se; out[j + 2] = (wg.hinge[2] + (S * cs - C * ss) * ce) * s;
+          }
+          g.attributes.position.needsUpdate = true;
+        }
+        W.g.computeVertexNormals(); W.g.computeBoundingSphere(); W.vg.computeBoundingSphere();
+      };
+      bWings.forEach(W => wingPose(W, 0));
+      // Jedes Partikel steht für eine Biene: Die 3D-Biene sitzt winzig klein genau dort, wo das gewählte Partikel leuchtet.
+      // Fliegt die Kamera heran, wird aus dem Lichtpunkt die Biene.
+      const BS = .007, BL = 3.4 * BS;   // Maßstab: eine Biene ist so groß wie ein Partikel
+      scene.add(bee); bee.visible = false; bee.scale.setScalar(BS);
+      const zA = new T.Vector3(), zDir = new T.Vector3(), zLook0 = new T.Vector3(); let zD0 = 11, beeYaw = 0, zPx = 0;
+      function updateBee(Zv, dt) {
+        bee.visible = Zv > 0 && zPx > 3;
+        if (!bee.visible) return 0;
+        let m = clamp((zPx - 20) / 34, 0, 1); m = m * m * (3 - 2 * m);   // erst wenn die anderen Partikel verschwunden sind, wird aus dem Punkt die Biene
+        if (level === 1 && !ptr.size && !reduced) beeYaw += dt * .15 * clamp((Zv - .85) / .15, 0, 1);
+        bee.rotation.y = beeYaw;
+        bee.position.copy(zA).y += Math.sin(time * 1.6) * BL * .03;
+        bee.updateMatrix();
+        for (const W of bWings) wingPose(W, wingPh);
+        for (const mt of bMats) if (mt.uniforms) mt.uniforms.uOp.value = m; else mt.opacity = mt.userData.op * m;
+        return m;
+      }
+
+      // ---- Tasten: Leertaste wechselt zwischen Biene und Schwarm, F zwischen Weiß und Naturfarben ----
+      let target = 1, M = 1, natT = 0, natM = 0;   // startet direkt als Biene, ohne Einschwärmen
+      addEventListener('keydown', e => {
+        if (e.target !== document.body) return;
+        if (e.code === 'Space') {target = target ? 0 : 1; e.preventDefault();}
+        if (e.code === 'KeyF') natT = natT ? 0 : 1;
+        if (e.key === '+' || e.key === '=') setLevel(level + 1);
+        if (e.key === '-') setLevel(level - 1);
+        if (e.key === 'Escape' && level === 1) setLevel(0);
+      });
+
+      // ---- Entwicklermenü: alle wichtigen Stellschrauben, gespeichert im Browser ----
+      const SPEC = [
+        ['Time'],
+        ['yps', 'Playback (years per second)', .2, 5, .1, 2],
+        ['Tumbling'],
+        ['tqYear', 'Tumbling from', 1990, 2060, 1, 2019],
+        ['tqAmt', 'Tumbling strength', 0, 3, .05, 1],
+        ['Decay'],
+        ['fdYear', 'Decay from (fading, wings, sinking)', 1990, 2060, 1, 2020],
+        ['fadeMax', 'Fading, share at the end', 0, 1, .01, .82, v => Math.round(v * 100) + '%'],
+        ['wing', 'Wing decay (slower, flatter, blurred)', 0, 1.2, .01, 1],
+        ['sinkMax', 'Sinking, depth', 0, 4.5, .05, 3.2],
+        ['Fraying'],
+        ['frYear', 'Fraying from', 1990, 2060, 1, 2038],
+        ['frSpread', 'Fraying, spread', 0, 1, .01, .28],
+        ['frJit', 'Fraying, jitter', 0, 6, .1, 2.4],
+        ['Bee'],
+        ['hover', 'Hover height', 2, 7, .1, 4.6],
+        ['jit', 'Base jitter', 0, .15, .005, .045],
+        ['wf', 'Wingbeat, speed', 10, 100, 1, 50],
+        ['legJit', 'Legs, jitter', 0, 1.5, .05, .65],
+        ['legSwing', 'Legs, swing', 0, 3, .05, 1],
+        ['size', 'Particle size', .015, .08, .001, .036],
+        ['Glow'],
+        ['glow', 'Glow', 0, 3, .05, .4],
+        ['bright', 'Brightness', .1, 2, .05, 1],
+        ['twinkle', 'Twinkle', 0, 1, .01, 1],
+        ['tint', 'Cool blue', 0, 1, .01, .6],
+        ['Dead particles'],
+        ['grav', 'Fall speed', 1, 15, .1, 5.5],
+        ['floorDim', 'Brightness on the ground', 0, 1, .01, .25]
+      ];
+      const DEF = {}; SPEC.forEach(p => {if (p.length > 1) DEF[p[0]] = p[5];});
+      const K = {...DEF};
+      try {Object.assign(K, JSON.parse(localStorage.getItem('wildbiene-dev') || '{}'));} catch (e) {}
+      const dev = document.getElementById('dev'), devBtn = document.getElementById('devBtn'), outs = {};
+      const fmt = (p, v) => p[6] ? p[6](v) : p[4] >= 1 ? String(Math.round(v)) : String(+v.toFixed(3));
+      function save() {try {localStorage.setItem('wildbiene-dev', JSON.stringify(K));} catch (e) {}}
+      function buildDev() {
+        dev.innerHTML = '<header><h3>Developer menu</h3><button class="icon-btn" type="button" aria-label="Close"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4l6.6 6.6L8 22.6 9.4 24l6.6-6.6 6.6 6.6 1.4-1.4-6.6-6.6z"/></svg></button></header>';
+        dev.querySelector('header button').onclick = toggleDev;
+        const body = document.createElement('div'); body.className = 'body'; dev.appendChild(body);
+        const CHEV = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M22 16 12 26l-1.4-1.4 8.6-8.6-8.6-8.6L12 6z"/></svg>';
+        let grp = null;
+        SPEC.forEach(p => {
+          if (p.length === 1) {
+            const sec = document.createElement('section'), hb = document.createElement('button'), pan = document.createElement('div');
+            sec.className = 'acc' + (grp ? '' : ' open'); pan.className = 'panel';
+            hb.type = 'button'; hb.innerHTML = '<span>' + p[0] + '</span>' + CHEV; hb.setAttribute('aria-expanded', !grp);
+            hb.onclick = () => hb.setAttribute('aria-expanded', sec.classList.toggle('open'));
+            sec.append(hb, pan); body.appendChild(sec); grp = pan; return;
+          }
+          const lab = document.createElement('label'), span = document.createElement('span'), b = document.createElement('output'), inp = document.createElement('input');
+          span.textContent = p[1]; b.textContent = fmt(p, K[p[0]]);
+          Object.assign(inp, {type: 'range', className: 'cds-range', min: p[2], max: p[3], step: p[4], value: K[p[0]]});
+          const fill = () => inp.style.setProperty('--p', (100 * (inp.value - p[2]) / (p[3] - p[2])) + '%');
+          fill();
+          inp.addEventListener('input', () => {K[p[0]] = +inp.value; b.textContent = fmt(p, K[p[0]]); fill(); save(); if (p[0] === 'size') resize();});
+          lab.append(span, inp, b); grp.appendChild(lab); outs[p[0]] = [inp, b];
+        });
+        const row = document.createElement('div'); row.className = 'btns';
+        const cp = document.createElement('button'), rs = document.createElement('button');
+        cp.type = rs.type = 'button'; cp.className = 'primary'; rs.className = 'secondary'; cp.textContent = 'Copy values'; rs.textContent = 'Reset';
+        cp.onclick = () => {const t = JSON.stringify(K, null, 2); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => {cp.textContent = 'Copied';}, () => {cp.textContent = 'Not copied'; console.log(t);}); setTimeout(() => {cp.textContent = 'Copy values';}, 1500);};
+        rs.onclick = () => {Object.assign(K, DEF); save(); buildDev(); resize();};
+        row.append(rs, cp); body.appendChild(row);
+      }
+      function toggleDev() {devBtn.setAttribute('aria-expanded', dev.classList.toggle('on'));}
+      buildDev();
+      devBtn.onclick = toggleDev;
+      addEventListener('keydown', e => {if (e.code === 'KeyD' && e.target === document.body) toggleDev();});
+
+      // ---- Zeitstrahl: spielt langsam von 1990 bis 2060, lässt sich ziehen ----
+      // Bestand wie im Partikel-Prototyp: bis heute −75 %, danach Szenario bis 0
+      const Y0 = 1990, Y1 = 2060, NOW = 2026;
+      const toV = y => (y - Y0) / (Y1 - Y0), yearOf = v => Y0 + (Y1 - Y0) * v;
+      // Reale Daten bis 2016: Krefelder Studie (Hallmann et al. 2017, −76 % Biomasse fliegender Insekten 1989–2016, gleichmäßige Abnahme pro Jahr).
+      // Danach pessimistisches Szenario: der verbliebene Bestand schrumpft gleichmäßig weiter und ist 2060 verschwunden
+      const M16 = .24, KR = Math.log(M16) / (2016 - Y0);
+      const remain = yr => yr <= 2016 ? Math.exp(KR * (yr - Y0)) : Math.max(0, M16 * (1 - (yr - 2016) / (Y1 - 2016)));
+      const L60 = 1 - remain(Y1);
+      const ramp = (loss, yr) => {const a = 1 - remain(yr); return clamp((loss - a) / Math.max(.001, L60 - a), 0, 1);};   // 0 ab dem Startjahr, 1 am Ende der Zeitleiste
+      const sl = document.getElementById('sl'), playB = document.getElementById('play'), yrEl = document.getElementById('yr'), lossEl = document.getElementById('loss');
+      let year = Y0, playing = false, playFrom = 0;
+      const ICON = {
+        play: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 28a1 1 0 0 1-1-1V5a1 1 0 0 1 1.5-.9l19 11a1 1 0 0 1 0 1.8l-19 11a1 1 0 0 1-.5.1z"/></svg>',
+        pause: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M12 6h-2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm10 0h-2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"/></svg>',
+        restart: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M18 28A12 12 0 1 0 6 16v6.2l-3.6-3.6L1 20l6 6 6-6-1.4-1.4L8 22.2V16a10 10 0 1 1 10 10z"/></svg>'
+      };
+      function setPlaying(v) {
+        playing = v;
+        const [ic, t] = v ? ['pause', 'Pause'] : year >= Y1 ? ['restart', 'Restart'] : ['play', 'Play'];
+        playB.innerHTML = ICON[ic] + '<span>' + t + '</span>';
+      }
+      // ---- Ansicht: Raster (herausgezoomt) ↔ Schwarm ↔ einzelne Biene (hineingezoomt), immer nur eine Stufe weiter ----
+      let uBase = .036, level = 0, zi = -1, Zv = 0, zE = 0, zMob = false; const zp = new T.Vector3(), zTmp = new T.Vector3(), zLook = new T.Vector3(), zOff = [0, 0];
+      const zoomEl = document.getElementById('zoom'), zin = document.getElementById('zin'), zout = document.getElementById('zout'), lvB = [...zoomEl.querySelectorAll('.lv button')];
+      const info = document.getElementById('info');
+      const NAME = {'-1': 'grid', 0: 'swarm', 1: 'single bee'};
+      function pickBee() {
+        if (Zv > 0 && zi >= 0) return;
+        // Zoom in die Mitte des Bienenschwarms: Schwerpunkt der noch leuchtenden Partikel; das Partikel dort wird zur Biene
+        const st = remain(year); let n = 0; zA.set(0, 0, 0);
+        for (let i = 0; i < N; i++) if (rank[i] < st && dim[i] > .3) {zA.x += pos[i * 3]; zA.y += pos[i * 3 + 1]; zA.z += pos[i * 3 + 2]; n++;}
+        if (n) zA.multiplyScalar(1 / n); else zA.copy(grp.position);
+        zi = -1; let best = 1e9;
+        for (let i = 0; i < N; i++) {
+          if (rank[i] >= st || dim[i] < .6) continue;
+          const dx = pos[i * 3] - zA.x, dy = pos[i * 3 + 1] - zA.y, dz = pos[i * 3 + 2] - zA.z, dd = dx * dx + dy * dy + dz * dz;
+          if (dd < best) {best = dd; zi = i;}
+        }
+        if (zi < 0) zi = Math.floor(R() * N);
+        zDir.copy(cam.position).sub(zA); zD0 = zDir.length(); zDir.normalize();
+        cam.getWorldDirection(zTmp); zLook0.copy(cam.position).addScaledVector(zTmp, zD0);   // bisheriger Blickpunkt, gleitet weich zur Schwarmmitte
+        beeYaw = Math.atan2(zDir.x, zDir.z) - .6;   // Seitenansicht, leicht von vorn
+      }
+      function setLevel(v) {
+        v = clamp(v, -1, 1); if (Math.abs(v - level) > 1) return;
+        if (v === 1 && level !== 1) {pickBee(); setPlaying(false);}
+        level = v; lineup = v === -1 ? 1 : 0;
+        document.body.classList.toggle('zoomed', v === 1);
+        zin.disabled = v === 1; zout.disabled = v === -1;
+        zin.setAttribute('aria-label', 'Zoom in' + (v < 1 ? ': ' + NAME[v + 1] : ''));
+        zout.setAttribute('aria-label', 'Zoom out' + (v > -1 ? ': ' + NAME[v - 1] : ''));
+        lvB.forEach(b => {const l = +b.dataset.l; b.setAttribute('aria-current', l === v); b.disabled = Math.abs(l - v) > 1; b.title = b.disabled ? 'Only reachable via the swarm' : '';});
+      }
+      zin.onclick = () => setLevel(level + 1); zout.onclick = () => setLevel(level - 1);
+      lvB.forEach(b => {b.onclick = () => setLevel(+b.dataset.l);});
+      document.getElementById('infoBack').onclick = () => setLevel(0);
+      setLevel(0);
+      playB.onclick = () => {if (!playing && year >= Y1) {year = Y0; sl.value = 0;} setPlaying(!playing); playFrom = 0;};
+      sl.addEventListener('input', () => {year = yearOf(+sl.value); setPlaying(false);});
+      setPlaying(false);
+
+      // ---- Kamera (wie im Prototyp) und Antippen zum Aufscheuchen ----
+      let th = 1.15, ph = 1.3, rad = 11, zoomed = false;
+      const cv = renderer.domElement, ptr = new Map(); let pinch = 0, tap = null, burst = null;
+      const dist = () => {const a = [...ptr.values()]; return Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]);};
+      cv.addEventListener('pointerdown', e => {ptr.set(e.pointerId, [e.clientX, e.clientY]); pinch = ptr.size === 2 ? dist() : 0; cv.setPointerCapture(e.pointerId); tap = ptr.size === 1 ? [e.clientX, e.clientY] : null;});
+      cv.addEventListener('pointerup', e => {if (tap && ptr.size === 1) burst = [e.clientX, e.clientY]; ptr.delete(e.pointerId); pinch = 0; tap = null;});
+      cv.addEventListener('pointercancel', e => {ptr.delete(e.pointerId); pinch = 0; tap = null;});
+      cv.addEventListener('pointermove', e => {
+        const p = ptr.get(e.pointerId); if (!p) return;
+        const dx = e.clientX - p[0], dy = e.clientY - p[1]; p[0] = e.clientX; p[1] = e.clientY;
+        if (tap && Math.hypot(e.clientX - tap[0], e.clientY - tap[1]) > 6) tap = null;
+        if (level === 1 || Zv > 0) {beeYaw += dx * .01; return;}   // Einzelbiene mit dem Finger drehen
+        if (ptr.size === 2) {
+          const d = dist();
+          if (pinch && d > 0) {rad = Math.min(30, Math.max(3.5, rad * pinch / d)); zoomed = true;}
+          pinch = d;
+        }
+        else {th -= dx * .006; ph = Math.min(1.5, Math.max(.2, ph - dy * .006));}
+      });
+      cv.addEventListener('wheel', e => {if (level === 1) return; rad = Math.min(30, Math.max(3.5, rad * (1 + e.deltaY * .001))); zoomed = true; e.preventDefault();}, {passive: false});
+      function resize() {
+        const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); cam.aspect = w / h;
+        const mobile = w <= 720 && h > w;
+        if (!zoomed) rad = mobile ? Math.min(18, 11 * Math.max(1, .9 / cam.aspect)) : 11;
+        uBase = K.size * Math.max(1, Math.min(1.5, 800 / h)); pMat.uniforms.uSize.value = uBase;
+        cam.updateProjectionMatrix();
+        pMat.uniforms.uScale.value = h * renderer.getPixelRatio() / (2 * Math.tan(cam.fov * PI / 360));
+        if (composer) {composer.setSize(w, h); bloom.resolution.set(w, h);}
+        // Einzelbiene: links neben der Infotafel, mobil oben über der Tafel
+        zOff[0] = mobile ? 0 : w * .17; zOff[1] = mobile ? h * .2 : 0;
+        zMob = mobile;
+      }
+      addEventListener('resize', resize); resize();
+
+      // ---- Loop ----
+      const grp = new T.Object3D(); grp.rotation.order = 'YZX'; grp.scale.setScalar(1.25);
+      const ray = new T.Raycaster(), ndc = new T.Vector2();
+      const CEN = .05, YAW = .52;   // Seitenansicht aus der Startkamera, minimal zur linken Seite der Biene gedreht
+      let wingPh = 0;
+      const fly = {r: 0, vr: 0, p: 0, vp: 0, y: 0, vy: 0, x: 0, vx: 0};
+      const clock = new T.Clock(); let time = 0;
+      function frame() {
+        requestAnimationFrame(frame);
+        const dt = Math.min(clock.getDelta(), .05); time += dt;
+        const calm = reduced ? .3 : 1;
+        const mT = level === 1 || Zv > 0 ? 1 : target;   // zum Hineinzoomen sammelt sich der Schwarm zur Biene
+        const stp = dt / (mT ? 2.2 : 1.6); M += Math.max(-stp, Math.min(stp, mT - M));
+        natM += Math.max(-dt * 1.5, Math.min(dt * 1.5, natT - natM));
+
+        if (playing && time > playFrom) {const v = Math.min(1, toV(year) + dt * K.yps / (Y1 - Y0)); year = yearOf(v); sl.value = v; if (v >= 1) {year = Y1; setPlaying(false);}}
+        const st = remain(year), loss = 1 - st;
+        sl.style.setProperty('--p', (100 * toV(year)) + '%');
+        yrEl.textContent = Math.floor(year); lossEl.textContent = (Math.round(loss * 100) ? '−' : '') + Math.round(loss * 100) + '%';
+        yrEl.classList.toggle('fut', year > NOW + .05); lossEl.classList.toggle('fut', year > NOW + .05);
+
+        // Biene schwebt wie im Prototyp; je weniger von ihr übrig ist, desto unsicherer fliegt sie.
+        // Die Lage folgt weichen, langsamen Zielen mit Trägheit, ab und zu sackt sie kurz ab und fängt sich wieder.
+        const zc = 1;
+        const tq = Math.pow(ramp(loss, K.tqYear), 1.3) * calm * K.tqAmt * zc;
+        // Zerfall der Form: Flügel werden langsamer, die Kontur franst aus, die Biene sinkt, am Ende bleibt eine lose Wolke
+        const fd = ramp(loss, K.fdYear) * zc;
+        wingPh += K.wf * calm * (1 - Math.min(.95, .8 * K.wing) * fd) * dt;
+        const fadeAmt = K.fadeMax * Math.pow(fd, 1.1), wAmp = .8 * (1 - Math.min(.95, .65 * K.wing) * fd), sink = K.sinkMax * Math.pow(fd, 1.4);
+        let fr = ramp(loss, K.frYear); fr = fr * fr * (3 - 2 * fr) * zc;
+        const wR = (Math.sin(time * .53) + Math.sin(time * .91 + 1.7) * .6) * .14 * tq;
+        const wP = (Math.sin(time * .41 + .8) + Math.sin(time * .77) * .5) * .07 * tq;
+        if (R() < dt * .45 * tq) {fly.vy -= .35 + R() * .35; fly.vr += (R() - .5) * .5;}
+        fly.vr += ((wR - fly.r) * 5 - fly.vr * 2.6) * dt; fly.r += fly.vr * dt;
+        fly.vp += ((wP - fly.p) * 5 - fly.vp * 2.6) * dt; fly.p += fly.vp * dt;
+        fly.vy += ((-.5 * tq * tq - sink - fly.y) * 4 - fly.vy * 2.4) * dt; fly.y += fly.vy * dt;
+        fly.vx += (-fly.r * 1.1 - fly.x * .7 - fly.vx * 1.1) * dt; fly.x += fly.vx * dt;   // Schräglage lässt sie seitlich abdriften
+        grp.position.set(Math.sin(YAW) * fly.x, K.hover + Math.sin(time * 2.2) * .12 * calm + fly.y, Math.cos(YAW) * fly.x);
+        grp.rotation.y = YAW;
+        grp.rotation.z = .15 + Math.sin(time * 1.1) * .05 * calm + fly.p;
+        grp.rotation.x = Math.sin(time * .8) * .04 * calm + fly.r;
+        grp.updateMatrix();
+        const E = grp.matrix.elements;
+
+        // Antippen: Strahl durch die Szene, Partikel in der Nähe springen weg
+        let bo = null, bd = null;
+        if (burst && Zv > 0) burst = null;
+        if (burst) {
+          ndc.set(burst[0] / innerWidth * 2 - 1, -(burst[1] / innerHeight) * 2 + 1);
+          ray.setFromCamera(ndc, cam); bo = ray.ray.origin; bd = ray.ray.direction; burst = null;
+        }
+        const antW = Math.sin(time * 3.1) * .05, abdP = 1 + Math.sin(time * 6) * .02, swY = K.hover + .1 + Math.sin(time * .5) * .2;
+        const sx0 = Math.sin(time * .23) * .8, sz0 = Math.cos(time * .19) * .8;
+        const damp = Math.exp(-3.2 * dt), drag = Math.exp(-.9 * dt), jit = 1 + tq * .4 + fr * K.frJit, spread = Math.pow(fr, 1.3) * K.frSpread;
+
+        for (let i = 0; i < N; i++) {
+          const i3 = i * 3, l = L[i], p = P[i];
+          if (rank[i] >= st) {
+            // tot: fällt fast gerade herunter, trudelt kaum, prallt kurz auf und bleibt liegen
+            if (!dead[i]) {dead[i] = 1; vel[i3] = vel[i3] * .3 + (R() - .5) * .5; vel[i3 + 1] = vel[i3 + 1] * .3 + R() * .3; vel[i3 + 2] = vel[i3 + 2] * .3 + (R() - .5) * .5;}
+            if (dead[i] === 1) {
+              vel[i3] *= drag; vel[i3 + 2] *= drag; vel[i3 + 1] = vel[i3 + 1] * drag - K.grav * dt;
+              pos[i3] += (vel[i3] + Math.sin(time * 3 + i) * .08) * dt; pos[i3 + 1] += vel[i3 + 1] * dt; pos[i3 + 2] += (vel[i3 + 2] + Math.cos(time * 2.6 + i * 1.7) * .08) * dt;
+              if (pos[i3 + 1] <= .02) {
+                pos[i3 + 1] = .02;
+                if (vel[i3 + 1] < -1.4) {vel[i3 + 1] = -vel[i3 + 1] * .18; vel[i3] *= .4; vel[i3 + 2] *= .4;}
+                else {dead[i] = 2; vel[i3] = vel[i3 + 1] = vel[i3 + 2] = 0;}
+              }
+            }
+            dim[i] += ((dead[i] === 2 ? K.floorDim : .7) - dim[i]) * Math.min(1, dt * 3);
+            continue;
+          }
+          // ausblenden in der Luft: das Partikel fliegt unsichtbar mit und fällt trotzdem zu Boden, wenn es laut Daten stirbt
+          if (fkey[i] < fadeAmt) dim[i] = Math.max(0, dim[i] - dt * .8);
+          else dim[i] += (1 - dim[i]) * Math.min(1, dt * 3);
+          // gestaffelter Übergang: zuerst die Brust, zuletzt Flügel und Fühler
+          let m = clamp((M - p.d * .4) / .6, 0, 1); m = m * m * (3 - 2 * m);
+          let x = 0, y = 0, z = 0;
+          if (m > 0) {
+            let lx = l.x, ly = l.y, lz = l.z;
+            if (l.wing) {
+              const wg = l.wing, a = wingPh - wg.ph - fd * K.wing * p.p2;   // mit dem Zerfall verschwimmt der Schlag
+              const el = .2 + wAmp * Math.sin(a), sg = .3 + wg.back + .38 * Math.cos(a);
+              const ss = Math.sin(sg), cs = Math.cos(sg), se = Math.sin(el), ce = Math.cos(el), S = wg.u * wg.len, C = wg.v * wg.len;
+              lx = wg.h[0] - S * ss - C * cs;
+              ly = wg.h[1] + (S * cs - C * ss) * se;
+              lz = (wg.h[2] + (S * cs - C * ss) * ce) * wg.s;
+            } else if (l.part === 'ant') {ly += antW * l.ant * l.ant; lz += antW * .5 * l.ant * l.side;}
+            else if (l.part === 'abd') ly = (ly + .04) * abdP - .04;
+            else if (l.leg) { // Beine pendeln leicht, jedes im eigenen Takt, die Füße am stärksten
+              const k = clamp(-(l.y + .25) / .85, 0, 1) * K.legSwing, lp = l.leg * 1.7;
+              lx += Math.sin(time * 2.2 * calm + lp) * .07 * k; ly += Math.sin(time * 1.6 * calm + lp) * .025 * k; lz += Math.sin(time * 1.9 * calm + lp * 1.3) * .035 * k;
+            }
+            lx -= CEN;
+            const jj = p.j < 1 ? K.legJit : 1;
+            // diffuses Umherschwirren
+            lx += Math.sin(time * p.f1 + p.p1) * K.jit * jit * jj + Math.sin(time * 9 + p.p2) * .02 * jj;
+            ly += Math.sin(time * p.f2 + p.p2) * K.jit * jit * jj + Math.sin(time * 8 + p.p3) * .02 * jj;
+            lz += Math.sin(time * p.f3 + p.p3) * K.jit * jit * jj + Math.sin(time * 10 + p.p1) * .02 * jj;
+            // Kontur löst sich auf: jedes Partikel driftet ein Stück in seine eigene Richtung aus der Form
+            const sp = spread * p.p1 / 6.28; lx += p.dx * sp; ly += p.dy * sp; lz += p.dz * sp;
+            if ((p.st || p.sp < fr * 2.4) && p.j === 1) { // vereinzelte Ausreißer wandern zeitweise aus der Form und kehren zurück
+              let e = Math.sin(time * p.sf + p.sp); e = e > 0 ? e * e * p.sr * calm * (1 + fd) : 0;
+              lx += p.dx * e * .5 + Math.sin(time * 2.3 + p.p1) * .1 * e; ly += p.dy * e * .5 + Math.sin(time * 2.1 + p.p2) * .1 * e; lz += p.dz * e * .5 + Math.sin(time * 2.7 + p.p3) * .1 * e;
+            }
+            x = E[0] * lx + E[4] * ly + E[8] * lz + E[12]; y = E[1] * lx + E[5] * ly + E[9] * lz + E[13]; z = E[2] * lx + E[6] * ly + E[10] * lz + E[14];
+          }
+          if (m < 1) {
+            // Schwarm: jedes Partikel kreist auf eigener Bahn um die Mitte und zuckt im Zickzack
+            const a = p.a * time * calm + p.ph, rr = p.r * (1 + .25 * Math.sin(time * .6 + p.p1)), ca = Math.cos(a) * rr, sa = Math.sin(a) * rr;
+            const zx = Math.sin(time * 7 * p.f1 + p.p1) * .12, zy = Math.sin(time * 6 * p.f2 + p.p2) * .1, zz = Math.sin(time * 7 * p.f3 + p.p3) * .12;
+            const sx = sx0 + ca * p.ux + sa * p.vx + zx, sy = swY + (ca * p.uy + sa * p.vy) * .55 + zy, sz = sz0 + ca * p.uz + sa * p.vz + zz;
+            const sw = Math.sin(PI * m) * .9;
+            x = sx + (x - sx) * m + p.dx * sw; y = sy + (y - sy) * m + p.dy * sw; z = sz + (z - sz) * m + p.dz * sw;
+          }
+          // wiederbelebt (Zeitstrahl zurückgezogen): aus der Bodenlage zurück in die Form federn
+          if (dead[i]) {dead[i] = 0; off[i3] = pos[i3] - x; off[i3 + 1] = pos[i3 + 1] - y; off[i3 + 2] = pos[i3 + 2] - z; vel[i3] = vel[i3 + 2] = 0; vel[i3 + 1] = 2;}
+          // Auslenkung durch Antippen, federt zurück
+          if (bo) {
+            const qx = x + off[i3] - bo.x, qy = y + off[i3 + 1] - bo.y, qz = z + off[i3 + 2] - bo.z, t = qx * bd.x + qy * bd.y + qz * bd.z;
+            const rx = qx - bd.x * t, ry = qy - bd.y * t, rz = qz - bd.z * t, dd = Math.hypot(rx, ry, rz) + 1e-4;
+            if (dd < 1.4) {const f = (1 - dd / 1.4) * 9 * (.6 + R() * .8); vel[i3] += rx / dd * f + (R() - .5) * 2; vel[i3 + 1] += ry / dd * f + (R() - .5) * 2; vel[i3 + 2] += rz / dd * f + (R() - .5) * 2;}
+          }
+          for (let c = 0; c < 3; c++) {vel[i3 + c] = (vel[i3 + c] - off[i3 + c] * 14 * dt) * damp; off[i3 + c] += vel[i3 + c] * dt;}
+          pos[i3] = x + off[i3]; pos[i3 + 1] = y + off[i3 + 1]; pos[i3 + 2] = z + off[i3 + 2];
+        }
+        // Hineinzoomen: die Kamera fliegt auf gerader Linie in den Schwarm, auf ein einzelnes Partikel zu.
+        // Der Abstand schrumpft exponentiell (gleichmäßiges Zoomgefühl), die Kurve ist an beiden Enden ganz weich.
+        const zt = level === 1 && Lv === 0 ? 1 : 0;
+        Zv += clamp(zt - Zv, -dt / 3.4, dt / 4.2);
+        const zq = clamp(Zv / .92, 0, 1); zE = zq * zq * zq * (zq * (zq * 6 - 15) + 10);
+        const lookY = 3.1 - .2 * tq - sink * .3;
+        // Herauszoomen zum Raster: die Kamera fährt exponentiell zurück (Faktor ZO), das Raster liegt in der weiten Ebene und füllt am Ende das Bild
+        const ZO = 3.4; let lq = clamp(Lv, 0, 1); lq = lq * lq * lq * (lq * (lq * 6 - 15) + 10); const zo = Math.pow(ZO, lq);
+        cam.position.set(Math.sin(ph) * Math.cos(th) * rad * zo, lookY + (Math.cos(ph) * rad + 2.6 - lookY) * zo, Math.sin(ph) * Math.sin(th) * rad * zo);
+        cam.lookAt(0, lookY, 0);
+        if (Zv > 0 && zi >= 0) {
+          const D1 = BL / ((zMob ? .72 : .4) * 1.04 * cam.aspect), d = zD0 * Math.pow(D1 / zD0, zE);
+          cam.position.copy(zA).addScaledVector(zDir, d);
+          let zl = clamp(zq / .35, 0, 1); zl = zl * zl * (3 - 2 * zl);
+          cam.lookAt(zLook.copy(zLook0).lerp(zA, zl));
+          cam.near = Math.min(.1, d * .05); cam.far = 100;
+          let sh = clamp((Zv - .8) / .2, 0, 1); sh = sh * sh * (3 - 2 * sh);
+          cam.setViewOffset(innerWidth, innerHeight, zOff[0] * sh, zOff[1] * sh, innerWidth, innerHeight);
+          zPx = BL * innerHeight / (1.04 * d);
+          pMat.uniforms.uNear.value = d; pMat.uniforms.uMax.value = 64;   // alle Partikel wachsen maßstabsgetreu mit, wie die Biene
+        } else {
+          zPx = 0; pMat.uniforms.uNear.value = 0; pMat.uniforms.uMax.value = 64;
+          if (cam.near !== .1) {cam.near = .1; cam.updateProjectionMatrix();}
+          if (cam.view && cam.view.enabled) cam.clearViewOffset();
+        }
+        if (info.classList.toggle('on', level === 1 && Zv > .92) !== (info.getAttribute('aria-hidden') === 'false')) info.setAttribute('aria-hidden', String(!info.classList.contains('on')));
+
+        // Aufreihen: Partikel schwirren wie ein Insektenschwarm auf ihren Rasterplatz vor der Kamera
+        Lv += Math.max(-dt / 2.6, Math.min(dt / 2.6, (lineup && Zv === 0 ? 1 : 0) - Lv));
+        let eG = clamp(Lv, 0, 1); eG = eG * eG * (3 - 2 * eG);
+        if (Lv > 0) {
+          cam.updateMatrixWorld();
+          const me = cam.matrixWorld.elements, dist = Math.hypot(cam.position.x, cam.position.y - lookY, cam.position.z) / zo * ZO;   // Raster für die ganz herausgezoomte Kamera, liegt fest im Raum
+          const Hv = 2 * dist * Math.tan(cam.fov * PI / 360), Wv = Hv * cam.aspect;
+          const M = Math.ceil(N / GS), cell = Math.sqrt(Wv * .82 * Hv * .6 / M), C = Math.max(1, Math.floor(Wv * .82 / cell)), Rn = Math.ceil(M / C);
+          const x0 = -(C - 1) * cell / 2, y0 = (Rn - 1) * cell / 2 + Hv * .07;
+          for (let i = 0, i3 = 0; i < N; i++, i3 += 3) {
+            const k = Math.floor(slot[i] / GS), gx = x0 + (k % C) * cell, gy = y0 - Math.floor(k / C) * cell, p = P[i];
+            const tx = me[0] * gx + me[4] * gy, ty = lookY + me[1] * gx + me[5] * gy, tz = me[2] * gx + me[6] * gy;
+            let e = clamp((Lv - pTw[i * 2] / TAU * .4) / .6, 0, 1); e = e * e * (3 - 2 * e);
+            const sw = Math.sin(PI * e);
+            const zx = Math.sin(time * 7 * p.f1 + p.p1) * .35, zy = Math.sin(time * 6 * p.f2 + p.p2) * .3, zz = Math.sin(time * 7 * p.f3 + p.p3) * .35;
+            rp[i3] = pos[i3] + (tx - pos[i3]) * e + (p.dx * 1.1 + zx) * sw;
+            rp[i3 + 1] = pos[i3 + 1] + (ty - pos[i3 + 1]) * e + (p.dy * 1.1 + zy) * sw;
+            rp[i3 + 2] = pos[i3 + 2] + (tz - pos[i3 + 2]) * e + (p.dz * 1.1 + zz) * sw;
+          }
+        } else {
+          rp.set(pos);
+          if (Zv > 0 && zi >= 0) {let e = clamp(Zv / .25, 0, 1); e = e * e * (3 - 2 * e); const k = zi * 3; rp[k] += (zA.x - rp[k]) * e; rp[k + 1] += (zA.y - rp[k + 1]) * e; rp[k + 2] += (zA.z - rp[k + 2]) * e;}   // das Zielpartikel hält still
+        }
+        geo.attributes.position.needsUpdate = true;
+
+        const bb = updateBee(Zv, dt), zBee = bb;
+        const ice = [1 - .4 * K.tint, 1 - .1 * K.tint, 1];   // eisiges Weiß wie im Beispiel
+        for (let i = 0, i3 = 0; i < N; i++, i3 += 3) {
+          const alive = rank[i] < st;
+          for (let c = 0; c < 3; c++) {
+            const w = white[i3 + c] * ice[c], n = (w + (nat[i3 + c] - w) * natM);
+            const lc = alive ? n : .32 * (1 - .1 * c);  // im Raster: lebend hell, tot ausgegraut
+            col[i3 + c] = n * dim[i] + ((slot[i] % GS ? 0 : lc) - n * dim[i]) * eG;
+          }
+          if (Zv > 0) {let g = i === zi ? 1 - zBee : clamp((zPx - 6) / 13, 0, 1); if (i !== zi) {g = 1 - g * g * (3 - 2 * g);} col[i3] *= g; col[i3 + 1] *= g; col[i3 + 2] *= g;}   // die anderen Partikel verlöschen, bevor das Insekt erkennbar wird; das gewählte wird zur Biene
+        }
+        pMat.uniforms.uTime.value = time; pMat.uniforms.uTw.value = K.twinkle * (1 - .6 * eG); pMat.uniforms.uBright.value = K.bright * (1 + 2.6 * eG); pMat.uniforms.uSize.value = uBase * (1 + (zo - 1) * 1.25);   // Punkte bleiben beim Herauszoomen sichtbar
+        if (bloom) bloom.strength = K.glow;
+        geo.attributes.color.needsUpdate = true;
+        if (composer) composer.render(); else renderer.render(scene, cam);
+      }
+      frame();
+    })();
+  </script>
+</body>
+
+</html>
+
+</body></html>
